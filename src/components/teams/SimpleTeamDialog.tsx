@@ -243,12 +243,11 @@ export function SimpleTeamDialog() {
     <Dialog>
       <DialogTrigger asChild>
         <Button 
-          className="group relative overflow-hidden bg-gradient-to-r from-primary/90 via-secondary/90 to-accent/90 hover:from-primary hover:to-accent ring-1 ring-primary/30 dark:ring-0 hover:shadow-2xl hover:shadow-primary/25 transform hover:scale-110 transition-all duration-300 ease-out rounded-2xl px-6 py-4 text-primary-foreground dark:text-white font-semibold shadow-lg"
+          className="rounded-2xl px-6 py-4 font-semibold shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300"
           size="lg"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-quest-accent/20 via-transparent to-quest-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="relative flex items-center gap-2">
-            <Users className="h-5 w-5 animate-pulse drop-shadow dark:drop-shadow-none" />
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
             <span className="hidden sm:inline">Find Adventure Team</span>
             <span className="sm:hidden">Team Up</span>
           </div>

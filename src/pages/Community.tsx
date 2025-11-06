@@ -706,9 +706,6 @@ const Community = () => {
             transition={{ type: "spring", stiffness: 260, damping: 20 }}
             className="relative"
           >
-            {/* Glow effect */}
-            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary via-purple-500 to-pink-500 opacity-75 blur-xl animate-pulse" />
-            
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>
                 <motion.div
@@ -717,10 +714,9 @@ const Community = () => {
                 >
                   <Button
                     size="lg"
-                    className="relative rounded-full h-14 w-14 shadow-2xl bg-gradient-to-br from-primary via-purple-600 to-pink-600 hover:from-primary/90 hover:via-purple-500 hover:to-pink-500 border-2 border-white/20 transition-all duration-300 p-0"
+                    className="rounded-full h-14 w-14 shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300 p-0"
                   >
-                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/20 to-transparent" />
-                    <Plus className="h-7 w-7 relative z-10" />
+                    <Plus className="h-7 w-7" />
                   </Button>
                 </motion.div>
               </DialogTrigger>

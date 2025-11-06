@@ -166,23 +166,12 @@ export const TeamChatPanel = () => {
               whileTap={{ scale: 0.95 }}
               className="relative"
             >
-              {/* Glow effect */}
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary via-purple-500 to-pink-500 opacity-75 blur-xl animate-pulse" />
-              
               <Button
                 onClick={() => setIsOpen(true)}
                 size="lg"
-                className="relative rounded-full h-14 w-14 shadow-2xl bg-gradient-to-br from-primary via-purple-600 to-pink-600 hover:from-primary/90 hover:via-purple-500 hover:to-pink-500 border-2 border-white/20 transition-all duration-300"
+                className="rounded-full h-14 w-14 shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300"
               >
-                <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/20 to-transparent" />
-                <MessageCircle className="h-6 w-6 relative z-10" />
-                <motion.div
-                  className="absolute -top-1 -right-1"
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ repeat: Infinity, duration: 2 }}
-                >
-                  <Sparkles className="h-4 w-4 text-yellow-300" />
-                </motion.div>
+                <MessageCircle className="h-6 w-6" />
               </Button>
             </motion.div>
           </motion.div>
