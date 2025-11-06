@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -32,6 +33,7 @@ interface DirectChatProps {
 
 export const DirectChat = ({ otherUserId }: DirectChatProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [replyingTo, setReplyingTo] = useState<DirectMessage | null>(null);
@@ -338,18 +340,37 @@ export const DirectChat = ({ otherUserId }: DirectChatProps) => {
                 msg.sender_id === user?.id ? "flex-row-reverse" : ""
               }`}
             >
-              <Avatar className="h-8 w-8 ring-2 ring-primary/20">
-                <AvatarImage src={msg.profiles.avatar_url || undefined} />
-                <AvatarFallback className="bg-gradient-to-br from-primary to-purple-600 text-white text-xs">
-                  {msg.profiles.username?.[0]?.toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              <div
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  navigate(`/profile/${msg.sender_id}`);
+                }}
+                className="cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0"
+                title={`View ${msg.profiles.username}'s profile`}
+              >
+                <Avatar className="h-8 w-8 ring-2 ring-primary/20 pointer-events-none">
+                  <AvatarImage src={msg.profiles.avatar_url || undefined} />
+                  <AvatarFallback className="bg-gradient-to-br from-primary to-purple-600 text-white text-xs">
+                    {msg.profiles.username?.[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
 
               <div className={`flex-1 ${msg.sender_id === user?.id ? "text-right" : ""}`}>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-semibold">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      navigate(`/profile/${msg.sender_id}`);
+                    }}
+                    className="text-xs font-semibold hover:text-primary transition-colors cursor-pointer"
+                    title={`View ${msg.profiles.username}'s profile`}
+                  >
                     {msg.profiles.username}
-                  </span>
+                  </button>
                   <span className="text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(msg.created_at), {
                       addSuffix: true,

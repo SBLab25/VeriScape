@@ -159,7 +159,7 @@ export const TeamChatPanel = () => {
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0, y: 20 }}
             transition={{ type: "spring", stiffness: 260, damping: 20 }}
-            className="fixed bottom-28 right-6 z-50"
+            className="fixed bottom-[87px] right-6 z-50"
           >
             <motion.div
               whileHover={{ scale: 1.1, rotate: 5 }}
@@ -172,10 +172,10 @@ export const TeamChatPanel = () => {
               <Button
                 onClick={() => setIsOpen(true)}
                 size="lg"
-                className="relative rounded-full h-16 w-16 shadow-2xl bg-gradient-to-br from-primary via-purple-600 to-pink-600 hover:from-primary/90 hover:via-purple-500 hover:to-pink-500 border-2 border-white/20 transition-all duration-300"
+                className="relative rounded-full h-14 w-14 shadow-2xl bg-gradient-to-br from-primary via-purple-600 to-pink-600 hover:from-primary/90 hover:via-purple-500 hover:to-pink-500 border-2 border-white/20 transition-all duration-300"
               >
                 <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/20 to-transparent" />
-                <MessageCircle className="h-7 w-7 relative z-10" />
+                <MessageCircle className="h-6 w-6 relative z-10" />
                 <motion.div
                   className="absolute -top-1 -right-1"
                   animate={{ scale: [1, 1.2, 1] }}

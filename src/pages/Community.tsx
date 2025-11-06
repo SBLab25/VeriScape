@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Heart, MessageCircle, Send, Share2, Filter, Plus, Tag, Image, MapPin, Clock, User } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { MultiImageUpload } from "@/components/ui/multi-image-upload";
 import { PostImageCarousel } from "@/components/ui/post-image-carousel";
 import { SimpleTeamDialog } from "@/components/teams/SimpleTeamDialog";
@@ -468,98 +469,7 @@ const Community = () => {
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Share achievements, get help, and connect with fellow adventurers</p>
           </div>
 
-          {/* Action Bar */}
-          <Card className="backdrop-blur-sm bg-card/50 border-border/50 shadow-lg">
-            <CardContent className="p-4">
-              <div className="flex gap-2">
-                <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-                  <DialogTrigger asChild>
-                    <Button className="flex-1 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground shadow-lg">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Post
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-md mx-auto">
-                      <DialogHeader>
-                        <DialogTitle>Share with Community</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <Input 
-                          placeholder="Post title" 
-                          value={title} 
-                          onChange={(e) => setTitle(e.target.value)} 
-                        />
-                        
-                        <div className="grid grid-cols-2 gap-2">
-                          <select
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                            value={postType}
-                            onChange={(e) => setPostType(e.target.value as any)}
-                          >
-                            <option value="general">General</option>
-                            <option value="help">Help</option>
-                            <option value="achievement">Achievement</option>
-                            <option value="discussion">Discussion</option>
-                          </select>
-                          <Input 
-                            placeholder="Tags (comma separated)" 
-                            value={tagsInput} 
-                            onChange={(e) => setTagsInput(e.target.value)} 
-                          />
-                        </div>
-                        <Textarea 
-                          placeholder="Write your post..." 
-                          value={content} 
-                          onChange={(e) => setContent(e.target.value)} 
-                          className="min-h-[100px]" 
-                        />
-                        
-                        {/* Multi-Image Upload */}
-                        <div>
-                          <label className="text-sm font-medium mb-2 flex items-center gap-2">
-                            <Image className="h-4 w-4" />
-                            Add Images (Optional, up to 3)
-                          </label>
-                          <MultiImageUpload
-                            onImagesUpdate={setImageUrls}
-                            existingImages={imageUrls}
-                            maxImages={3}
-                            bucket="community-images"
-                            path="community-posts"
-                          />
-                        </div>
-                        
-                        <div className="flex justify-end gap-2">
-                          <Button 
-                            variant="outline" 
-                            onClick={() => setShowCreateDialog(false)}
-                          >
-                            Cancel
-                          </Button>
-                          <Button 
-                            onClick={() => {
-                              handleCreatePost();
-                              setShowCreateDialog(false);
-                            }} 
-                            disabled={!title.trim() || !content.trim() || creating}
-                          >
-                            {creating ? "Posting..." : "Share"}
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                </Dialog>
-                
-                <Button 
-                  variant="outline" 
-                  className="border-border/50 hover:bg-accent/20"
-                  onClick={() => setShowFilters(!showFilters)}
-                >
-                  <Filter className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Action Bar - Removed, filter button moved to bottom right */}
 
           {/* Filters Panel */}
           {showFilters && (
@@ -788,8 +698,115 @@ const Community = () => {
           </div>
         </div>
         
-        {/* Team-Up Button - Fixed position bottom right */}
-        <div className="fixed bottom-6 right-6 z-50">
+        {/* Create Post Button - Fixed position right side, above chat button with 15px gap */}
+        <div className="fixed bottom-[158px] right-6 z-50">
+          <motion.div
+            initial={{ scale: 0, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 260, damping: 20 }}
+            className="relative"
+          >
+            {/* Glow effect */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary via-purple-500 to-pink-500 opacity-75 blur-xl animate-pulse" />
+            
+            <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+              <DialogTrigger asChild>
+                <motion.div
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button
+                    size="lg"
+                    className="relative rounded-full h-14 w-14 shadow-2xl bg-gradient-to-br from-primary via-purple-600 to-pink-600 hover:from-primary/90 hover:via-purple-500 hover:to-pink-500 border-2 border-white/20 transition-all duration-300 p-0"
+                  >
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/20 to-transparent" />
+                    <Plus className="h-7 w-7 relative z-10" />
+                  </Button>
+                </motion.div>
+              </DialogTrigger>
+              <DialogContent className="max-w-md mx-auto">
+              <DialogHeader>
+                <DialogTitle>Share with Community</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <Input 
+                  placeholder="Post title" 
+                  value={title} 
+                  onChange={(e) => setTitle(e.target.value)} 
+                />
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={postType}
+                    onChange={(e) => setPostType(e.target.value as any)}
+                  >
+                    <option value="general">General</option>
+                    <option value="help">Help</option>
+                    <option value="achievement">Achievement</option>
+                    <option value="discussion">Discussion</option>
+                  </select>
+                  <Input 
+                    placeholder="Tags (comma separated)" 
+                    value={tagsInput} 
+                    onChange={(e) => setTagsInput(e.target.value)} 
+                  />
+                </div>
+                <Textarea 
+                  placeholder="Write your post..." 
+                  value={content} 
+                  onChange={(e) => setContent(e.target.value)} 
+                  className="min-h-[100px]" 
+                />
+                
+                {/* Multi-Image Upload */}
+                <div>
+                  <label className="text-sm font-medium mb-2 flex items-center gap-2">
+                    <Image className="h-4 w-4" />
+                    Add Images (Optional, up to 3)
+                  </label>
+                  <MultiImageUpload
+                    onImagesUpdate={setImageUrls}
+                    existingImages={imageUrls}
+                    maxImages={3}
+                    bucket="community-images"
+                    path="community-posts"
+                  />
+                </div>
+                
+                <div className="flex justify-end gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowCreateDialog(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      handleCreatePost();
+                      setShowCreateDialog(false);
+                    }} 
+                    disabled={!title.trim() || !content.trim() || creating}
+                  >
+                    {creating ? "Posting..." : "Share"}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+          </motion.div>
+        </div>
+
+        {/* Team-Up Button and Filter Button - Fixed position bottom right */}
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3">
+          <Button 
+            variant="outline" 
+            size="lg"
+            className="rounded-full h-12 w-12 border-border/50 hover:bg-accent/20 shadow-lg"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <Filter className="h-5 w-5" />
+          </Button>
           <SimpleTeamDialog />
         </div>
 
