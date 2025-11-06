@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useGamification } from "@/hooks/useGamification";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,17 +11,20 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, Upload, Camera, MapPin, X, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { verifyPhotoProof } from "@/services/aiEnhancements";
 
 interface Quest {
   id: string;
   title: string;
   description: string;
+  location?: string;
 }
 
 const SubmitQuest = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { getActivePowerUps } = useGamification();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [quest, setQuest] = useState<Quest | null>(null);
@@ -57,9 +61,9 @@ const SubmitQuest = () => {
         if (regularQuestData) {
           questData = regularQuestData;
         } else {
-          // If not found in regular quests, try AI-generated quests
+          // If not found in regular quests, try suggested_quests (AI-generated)
           const { data: aiQuestData, error: aiQuestError } = await supabase
-            .from("ai_generated_quests")
+            .from("suggested_quests")
             .select("id, title, description")
             .eq("id", id)
             .maybeSingle();
@@ -80,12 +84,14 @@ const SubmitQuest = () => {
         setIsAIQuest(foundInAI);
 
         // Check if user has already submitted (only for regular quests)
+        // Exclude rejected submissions - they should allow resubmission
         if (!foundInAI) {
           const { data: existingSubmission } = await supabase
             .from("Submissions")
-            .select("id")
+            .select("id, status")
             .eq("quest_id", id)
             .eq("user_id", user.id)
+            .neq("status", "rejected") // Ignore rejected submissions
             .maybeSingle();
 
           if (existingSubmission) {
@@ -163,20 +169,40 @@ const SubmitQuest = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const { latitude, longitude } = position.coords;
+          const { latitude, longitude, accuracy } = position.coords;
           setGeoLocation(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
-          toast({
-            title: "Location Added",
-            description: "Your current location has been added to the submission.",
-          });
+          
+          // Warn if accuracy is poor (likely IP-based)
+          if (accuracy && accuracy > 3000) {
+            toast({
+              title: "Low Accuracy Warning",
+              description: `Location accuracy is ±${Math.round(accuracy)}m. This may be inaccurate (off by 200-400km). Please verify the coordinates or enter manually.`,
+              variant: "destructive",
+              duration: 8000
+            });
+          } else {
+            toast({
+              title: "Location Added",
+              description: `Your current location has been added (accuracy: ±${Math.round(accuracy || 0)}m).`,
+            });
+          }
         },
         (error) => {
           console.error("Geolocation error:", error);
+          let message = "Could not get your location. You can enter it manually.";
+          if (error.code === 2) {
+            message = "GPS unavailable. This often happens on desktop or with VPN. Please enter your location manually.";
+          }
           toast({
             title: "Location Error",
-            description: "Could not get your location. You can enter it manually.",
+            description: message,
             variant: "destructive",
           });
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 20000,
+          maximumAge: 0
         }
       );
     } else {
@@ -240,6 +266,126 @@ const SubmitQuest = () => {
         .single();
 
       if (submitError) throw submitError;
+
+      // Check for active instant_verify powerup
+      const activePowerUps = getActivePowerUps();
+      const instantVerifyPowerup = activePowerUps.find(
+        up => up.powerups?.effect_type === 'instant_verify'
+      );
+
+      // Trigger AI photo verification if photo was uploaded
+      if (photoUrl && submission) {
+        // If instant verify powerup is active, skip AI verification and auto-approve
+        if (instantVerifyPowerup) {
+          console.log('⚡ Instant Verify powerup active - skipping AI verification');
+          
+          // Auto-approve the submission
+          const { error: approveError } = await supabase
+            .from('Submissions')
+            .update({ 
+              status: 'approved',
+              verified_at: new Date().toISOString()
+            })
+            .eq('id', submission.id);
+
+          if (approveError) {
+            console.error('Error auto-approving submission:', approveError);
+          } else {
+            // Deactivate the instant_verify powerup (single-use, duration_hours = 0)
+            if (instantVerifyPowerup.id) {
+              await supabase
+                .from('user_powerups')
+                .update({ 
+                  is_active: false,
+                  expires_at: new Date().toISOString() // Mark as expired/used
+                })
+                .eq('id', instantVerifyPowerup.id);
+            }
+
+            toast({
+              title: "⚡ Instant Verified!",
+              description: "Your Instant Verify powerup was used! Submission automatically approved.",
+            });
+          }
+        } else {
+          // Normal AI verification flow
+          console.log('🤖 Triggering AI photo verification...', {
+            submissionId: submission.id,
+            questTitle: quest.title,
+          });
+          
+          // Fire verification and show progress
+          const verifyPhoto = async () => {
+            try {
+              const result = await verifyPhotoProof({
+                submissionId: submission.id,
+                photoUrl: photoUrl,
+                questTitle: quest.title,
+                questDescription: quest.description,
+                questLocation: quest.location || '',
+                ...(geoLocation && {
+                  userLatitude: parseFloat(geoLocation.split(',')[0]),
+                  userLongitude: parseFloat(geoLocation.split(',')[1]),
+                }),
+              }, (message, progress) => {
+                console.log(`🔄 ${message} (${progress}%)`);
+              });
+              
+              console.log('✅ Verification completed:', result);
+              
+              if (result.verdict === 'verified') {
+                toast({
+                  title: "✅ AI Verified!",
+                  description: `Your submission passed AI verification with ${(result.final_confidence * 100).toFixed(0)}% confidence.`,
+                });
+              } else if (result.verdict === 'uncertain') {
+                toast({
+                  title: "⚠️ Pending Review",
+                  description: "Your submission needs manual review by admins.",
+                });
+              } else if (result.verdict === 'rejected') {
+                toast({
+                  title: "❌ Verification Failed",
+                  description: result.reason || "Your submission did not pass AI verification.",
+                  variant: "destructive",
+                });
+              }
+            } catch (verifyError: any) {
+              console.error('❌ Photo verification failed:', verifyError);
+              toast({
+                title: "Verification Notice",
+                description: "Photo verification is being processed in the background.",
+              });
+            }
+          };
+          verifyPhoto();
+        }
+      } else if (instantVerifyPowerup && submission) {
+        // Even without photo, instant verify can auto-approve
+        const { error: approveError } = await supabase
+          .from('Submissions')
+          .update({ 
+            status: 'approved',
+            verified_at: new Date().toISOString()
+          })
+          .eq('id', submission.id);
+
+        if (!approveError && instantVerifyPowerup.id) {
+          // Deactivate the powerup
+          await supabase
+            .from('user_powerups')
+            .update({ 
+              is_active: false,
+              expires_at: new Date().toISOString()
+            })
+            .eq('id', instantVerifyPowerup.id);
+
+          toast({
+            title: "⚡ Instant Verified!",
+            description: "Your Instant Verify powerup was used! Submission automatically approved.",
+          });
+        }
+      }
 
       // Auto-complete for all user's teams if this is a regular quest (not AI)
       if (!isAIQuest && quest.id) {

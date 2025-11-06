@@ -10,15 +10,18 @@ import { useToast } from '@/hooks/use-toast';
 import { MapPin, Star } from 'lucide-react';
 import ThemeToggleButton from '@/components/ui/theme-toggle-button';
 import DiscoveryAtlasIcon from '@/components/ui/discovery-atlas-icon';
+import { LottieLoading } from '@/components/ui/LottieLoading';
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('Signing you in...');
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setLoadingMessage('Signing you in...');
     setIsLoading(true);
     
     const formData = new FormData(e.currentTarget);
@@ -46,6 +49,7 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setLoadingMessage('Creating your account...');
     setIsLoading(true);
     
     const formData = new FormData(e.currentTarget);
@@ -74,6 +78,22 @@ const Auth = () => {
     
     setIsLoading(false);
   };
+
+  // Show loading overlay when authenticating
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-4">
+        <div className="absolute top-4 right-4 z-50">
+          <ThemeToggleButton />
+        </div>
+        <LottieLoading 
+          size="lg" 
+          message={loadingMessage}
+          className="min-h-screen"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-4">

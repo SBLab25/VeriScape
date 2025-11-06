@@ -15,7 +15,7 @@ const navigationItems = [
   { title: "Quests", url: "/all-quests", icon: Map },
   { title: "Quest Map", url: "/quest-map", icon: MapPin },
   { title: "Crew", url: "/community", icon: Globe },
-  { title: "Treasure", url: "/badges", icon: Gem },
+  { title: "Treasure", url: "/treasure", icon: Gem },
   { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
 ];
 

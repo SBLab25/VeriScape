@@ -17,6 +17,7 @@ import { MultiImageUpload } from "@/components/ui/multi-image-upload";
 import { PostImageCarousel } from "@/components/ui/post-image-carousel";
 import { SimpleTeamDialog } from "@/components/teams/SimpleTeamDialog";
 import CrewSidebar from "@/components/community/CrewSidebar";
+import { TeamChatPanel } from "@/components/community/TeamChatPanel";
 
 // Unified interface for all posts (community posts + quest submissions)
 interface UnifiedPost {
@@ -160,7 +161,7 @@ const Community = () => {
       ];
       const uniqueUserIds = [...new Set(allUserIds)];
 
-      // Fetch user profiles
+      // Fetch user profiles from both Users and profiles tables
       const { data: usersProfiles } = await supabase
         .from("Users")
         .select("id, username, bio, avatar_url")
@@ -168,10 +169,14 @@ const Community = () => {
 
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, username, avatar_url")
+        .select("id, username, full_name, avatar_url")
         .in("id", uniqueUserIds);
 
-      const allProfiles = [...(usersProfiles || []), ...(profiles || [])];
+      // Merge profiles, prioritizing profiles table over Users table
+      const profilesMap = new Map();
+      (usersProfiles || []).forEach(p => profilesMap.set(p.id, p));
+      (profiles || []).forEach(p => profilesMap.set(p.id, p)); // Override with profiles data if exists
+      const allProfiles = Array.from(profilesMap.values());
 
       // Process community posts
       const processedCommunityPosts = await Promise.all(
@@ -199,9 +204,9 @@ const Community = () => {
             comments_count: comments.length,
             user_has_liked: user ? likes.some((l: any) => l.user_id === user.id) : false,
             user_profile: profile ? {
-              username: profile.username,
-              full_name: ('bio' in profile) ? (profile as any).bio : profile.username,
-              avatar_url: profile.avatar_url
+              username: profile.username || null,
+              full_name: ('full_name' in profile) ? (profile as any).full_name : (('bio' in profile) ? (profile as any).bio : null),
+              avatar_url: profile.avatar_url || null
             } : null,
           } as UnifiedPost;
         })
@@ -245,9 +250,9 @@ const Community = () => {
             user_has_liked: user ? likes.some((l: any) => l.user_id === user.id) : false,
             user_has_shared: user ? shares.some((sh: any) => sh.user_id === user.id) : false,
             user_profile: profile ? {
-              username: profile.username,
-              full_name: ('bio' in profile) ? (profile as any).bio : profile.username,
-              avatar_url: profile.avatar_url
+              username: profile.username || null,
+              full_name: ('full_name' in profile) ? (profile as any).full_name : (('bio' in profile) ? (profile as any).bio : null),
+              avatar_url: profile.avatar_url || null
             } : null,
           } as UnifiedPost;
         })
@@ -787,6 +792,9 @@ const Community = () => {
         <div className="fixed bottom-6 right-6 z-50">
           <SimpleTeamDialog />
         </div>
+
+        {/* Team Chat Panel - Fixed position bottom left */}
+        <TeamChatPanel />
       </main>
 
     </div>

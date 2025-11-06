@@ -5,18 +5,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Clock, Star, Shuffle, Trophy, Users, TrendingUp, Activity } from "lucide-react";
+import { MapPin, Clock, Star, Shuffle, Trophy, Users, TrendingUp, Activity, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import DiscoveryAtlasIcon from '@/components/ui/discovery-atlas-icon';
 import { SearchAndFilter } from "@/components/search/SearchAndFilter";
 import { useAnalytics } from "@/hooks/useSimpleAnalytics";
 import { LiveActivityFeed } from "@/components/realtime/LiveActivityFeed";
 import { QuestRecommendations } from "@/components/performance/QuestRecommendations";
+import { QuestSuggestionsCarousel } from "@/components/quest/QuestSuggestionsCarousel";
 import { TopNavbar } from "@/components/navigation/TopNavbar";
 import { MiniCalendar } from "@/components/calendar/MiniCalendar";
 import { AIQuestGenerator } from "@/components/quest/AIQuestGenerator";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useUserBadges } from "@/hooks/useUserBadges";
+import { GamificationDashboard } from "@/components/gamification/GamificationDashboard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SuggestedUsers } from "@/components/social/SuggestedUsers";
+import { LottieLoading } from "@/components/ui/LottieLoading";
+import { DailyExercisePopup } from "@/components/exercises/DailyExercisePopup";
+import { useDailyExercise } from "@/hooks/useDailyExercise";
 
 interface Quest {
   id: string;
@@ -42,54 +49,89 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [featuredQuestIndex, setFeaturedQuestIndex] = useState(0);
   const [availableCount, setAvailableCount] = useState<number>(0);
+  const [showExercisePopup, setShowExercisePopup] = useState(false);
+  const { shouldShowPopup, markAsShown, refetch: refetchExercise, loading: exerciseLoading } = useDailyExercise();
 
   useEffect(() => {
     trackPageView('/home');
+  }, []); // Remove trackPageView from dependencies to prevent infinite loop
+
+  // Show daily exercise popup on first login of the day
+  useEffect(() => {
+    // Only check after user is loaded and hook is ready
+    if (!user || exerciseLoading) return;
     
+    try {
+      if (shouldShowPopup && typeof shouldShowPopup === 'function' && shouldShowPopup()) {
+        // Small delay to let page load first
+        const timer = setTimeout(() => {
+          setShowExercisePopup(true);
+          if (markAsShown && typeof markAsShown === 'function') {
+            markAsShown();
+          }
+        }, 1500);
+        return () => clearTimeout(timer);
+      }
+    } catch (error) {
+      console.error('Error checking if should show exercise popup:', error);
+      // Don't block page rendering if there's an error
+    }
+  }, [user, exerciseLoading, shouldShowPopup, markAsShown]);
+
+  useEffect(() => {
     const fetchQuests = async () => {
       try {
-        // Fetch both regular and AI generated quests
-        const [regularQuestsRes, aiQuestsRes] = await Promise.all([
-          supabase
-            .from("Quests")
-            .select("*")
-            .eq("is_active", true)
-            .order("created_at", { ascending: false }),
-          supabase
+        // Fetch regular quests
+        const { data: regularQuests, error: regularError } = await supabase
+          .from("Quests")
+          .select("*")
+          .eq("is_active", true)
+          .order("created_at", { ascending: false });
+
+        if (regularError) throw regularError;
+
+        // Fetch AI-generated quests only if user is logged in
+        let aiQuests = [];
+        if (user) {
+          const { data: aiData, error: aiError } = await supabase
             .from("ai_generated_quests")
             .select("*")
             .eq("is_active", true)
-            .order("created_at", { ascending: false })
-        ]);
-
-        if (regularQuestsRes.error) throw regularQuestsRes.error;
-        if (aiQuestsRes.error) throw aiQuestsRes.error;
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false });
+          
+          if (aiError) {
+            console.error("Error fetching AI quests:", aiError);
+            // Don't throw, just log - AI quests are optional
+          } else {
+            aiQuests = aiData || [];
+          }
+        }
 
         // Combine both quest types for listing
-        const regular = (regularQuestsRes.data || []);
-        const ai = (aiQuestsRes.data || []);
         const combinedQuests = [
-          ...regular,
-          ...ai
+          ...(regularQuests || []),
+          ...aiQuests
         ];
 
         setAllQuests(combinedQuests);
         setQuests(combinedQuests);
 
         // Compute user-specific available count (exclude user's submitted/finished quests)
+        // Exclude rejected submissions - they allow resubmission
         let completedIds = new Set<string>();
         if (user) {
           const { data: subs } = await supabase
             .from('Submissions')
-            .select('quest_id')
-            .eq('user_id', user.id);
+            .select('quest_id, status')
+            .eq('user_id', user.id)
+            .neq('status', 'rejected'); // Ignore rejected submissions
           subs?.forEach((s: any) => completedIds.add(s.quest_id));
         }
 
-        const regularAvailable = regular.filter((q: any) => !completedIds.has(q.id));
-        const aiForUser = user ? ai.filter((q: any) => q.user_id === user.id) : [];
-        const aiForUserAvailable = aiForUser.filter((q: any) => !completedIds.has(q.id));
-        setAvailableCount(regularAvailable.length + aiForUserAvailable.length);
+        const regularAvailable = (regularQuests || []).filter((q: any) => !completedIds.has(q.id));
+        const aiAvailable = aiQuests.filter((q: any) => !completedIds.has(q.id));
+        setAvailableCount(regularAvailable.length + aiAvailable.length);
 
         // Set first quest as featured
         if (combinedQuests.length > 0) {
@@ -108,7 +150,7 @@ const Home = () => {
     };
 
     fetchQuests();
-  }, [toast, trackPageView, user]);
+  }, [toast, user]); // Removed trackPageView from dependencies
 
   // Rotate featured quest every 30 seconds
   useEffect(() => {
@@ -243,13 +285,30 @@ const Home = () => {
               </Card>
             </div>
 
-            {/* Search and Filter */}
-            <div className="mb-8">
-              <SearchAndFilter quests={allQuests} onFilteredQuests={handleFilteredQuests} />
-            </div>
+            {/* Gamification & Quests Tabs */}
+            <Tabs defaultValue="quests" className="mb-8">
+              <TabsList className="grid w-full grid-cols-2 max-w-md">
+                <TabsTrigger value="quests" className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Quest Feed
+                </TabsTrigger>
+                <TabsTrigger value="gamification" className="flex items-center gap-2">
+                  <Zap className="h-4 w-4" />
+                  Challenges & XP
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Main Content Sections */}
-            <div className="space-y-8">
+              <TabsContent value="gamification" className="mt-6">
+                <GamificationDashboard />
+              </TabsContent>
+
+              <TabsContent value="quests" className="mt-6 space-y-8">
+
+                {/* Search and Filter */}
+                <SearchAndFilter quests={allQuests} onFilteredQuests={handleFilteredQuests} />
+              {/* AI-Powered Quest Suggestions */}
+              <QuestSuggestionsCarousel />
+
               {/* AI Quest Generator */}
               <AIQuestGenerator />
 
@@ -308,7 +367,7 @@ const Home = () => {
                   <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5">
                     <CardContent className="flex items-center justify-center h-64">
                       {loading ? (
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                        <LottieLoading size="md" />
                       ) : (
                         <div className="text-center">
                           <DiscoveryAtlasIcon className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
@@ -321,22 +380,34 @@ const Home = () => {
                 )}
               </div>
 
-              {/* Live Activity and Recommendations */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <LiveActivityFeed />
-                <QuestRecommendations />
-              </div>
-            </div>
+                {/* Live Activity and Recommendations */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <LiveActivityFeed />
+                  <QuestRecommendations />
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
 
-          {/* Right Side - Calendar */}
+          {/* Right Side - Calendar & Social */}
           <div className="xl:col-span-1">
-            <div className="sticky top-24">
+            <div className="sticky top-24 space-y-6">
               <MiniCalendar />
+              <SuggestedUsers />
             </div>
           </div>
         </div>
       </main>
+
+      {/* Daily Exercise Popup */}
+      <DailyExercisePopup
+        open={showExercisePopup}
+        onClose={() => setShowExercisePopup(false)}
+        onComplete={() => {
+          refetchExercise();
+          setShowExercisePopup(false);
+        }}
+      />
     </div>
   );
 };

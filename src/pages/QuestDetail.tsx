@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin, Clock, Star, Users, Crown, CheckCircle } from "lucide-react";
+import { ArrowLeft, MapPin, Clock, Star, Users, Crown, CheckCircle, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Quest {
@@ -44,23 +44,50 @@ const QuestDetail = () => {
       if (!id || !user) return;
 
       try {
-        const { data: questData, error: questError } = await supabase
+        // First try to fetch from regular Quests table
+        let questData = null;
+        let error = null;
+        
+        const { data: regularQuestData, error: regularQuestError } = await supabase
           .from("Quests")
           .select("*")
           .eq("id", id)
-          .single();
+          .maybeSingle();
 
-        if (questError) throw questError;
+        if (regularQuestData) {
+          questData = regularQuestData;
+        } else {
+          // If not found in regular quests, try suggested_quests (AI-generated)
+          const { data: suggestedQuestData, error: suggestedQuestError } = await supabase
+            .from("suggested_quests")
+            .select("*")
+            .eq("id", id)
+            .maybeSingle();
+
+          if (suggestedQuestData) {
+            questData = suggestedQuestData;
+          } else {
+            error = suggestedQuestError || regularQuestError;
+          }
+        }
+
+        if (!questData) {
+          throw error || new Error("Quest not found");
+        }
+        
         setQuest(questData);
 
         // Check if user has already submitted for this quest
+        // Exclude rejected submissions - they should allow resubmission
+        // Note: Rejected submissions are DELETED, so they won't appear in this query
         const { data: submission } = await supabase
           .from("Submissions")
-          .select("id")
+          .select("id, status")
           .eq("quest_id", id)
           .eq("user_id", user.id)
-          .maybeSingle();
+          .maybeSingle(); // Don't filter by status - if it exists and wasn't deleted, user has submitted
         
+        console.log('📝 Initial submission check for quest:', id, 'user:', user.id, 'found:', submission);
         setHasSubmitted(!!submission);
 
         // Fetch user's teams
@@ -108,6 +135,96 @@ const QuestDetail = () => {
     };
 
     fetchQuest();
+
+    // Function to refresh submission status
+    const refreshSubmissionStatus = async () => {
+      if (!id || !user) return;
+      
+      try {
+        console.log('🔄 Refreshing submission status for quest:', id, 'user:', user.id);
+        // Check for ANY submission (including rejected ones) to see if deletion worked
+        const { data: allSubmissions } = await supabase
+          .from("Submissions")
+          .select("id, status")
+          .eq("quest_id", id)
+          .eq("user_id", user.id);
+        
+        console.log('📋 All submissions found:', allSubmissions);
+        
+        // Now check for non-rejected submissions only
+        const { data: submission } = await supabase
+          .from("Submissions")
+          .select("id, status")
+          .eq("quest_id", id)
+          .eq("user_id", user.id)
+          .neq("status", "rejected")
+          .maybeSingle();
+        
+        console.log('✅ Active submission (non-rejected):', submission);
+        console.log('📊 Setting hasSubmitted to:', !!submission);
+        setHasSubmitted(!!submission);
+      } catch (error) {
+        console.error('❌ Error refreshing submission status:', error);
+      }
+    };
+
+    // Listen for submission deletions (e.g., when rejected) - real-time updates
+    let channel: any = null;
+    if (id && user) {
+      channel = supabase
+        .channel(`submissions-${id}-${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'public',
+            table: 'Submissions',
+            filter: `quest_id=eq.${id} AND user_id=eq.${user.id}`,
+          },
+          () => {
+            // Submission was deleted (likely rejected), refresh to show submit button
+            console.log('Submission deleted, refreshing quest status...');
+            setHasSubmitted(false);
+          }
+        )
+        .subscribe();
+    }
+
+    // Listen for custom event from AdminPanel when submission is rejected
+    const handleQuestAvailabilityChange = (event: CustomEvent) => {
+      console.log('🎯 Quest availability changed event received:', event.detail);
+      if (event.detail?.questId === id || event.detail?.submissionId) {
+        console.log('✅ Matching quest ID or submission ID, refreshing...');
+        // Immediately set to false and then refresh
+        setHasSubmitted(false);
+        setTimeout(() => refreshSubmissionStatus(), 500); // Small delay to ensure DB is updated
+      }
+    };
+
+    window.addEventListener('quest-availability-changed', handleQuestAvailabilityChange as EventListener);
+    
+    // Also listen to submissions-changed event
+    const handleSubmissionsChanged = () => {
+      console.log('📢 Submissions changed event received, refreshing...');
+      refreshSubmissionStatus();
+    };
+    window.addEventListener('submissions-changed', handleSubmissionsChanged);
+    
+    // Also refresh when page gains focus (in case rejection happened while on another tab)
+    const handleFocus = () => {
+      console.log('👁️ Page gained focus, refreshing submission status...');
+      refreshSubmissionStatus();
+    };
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+      window.removeEventListener('quest-availability-changed', handleQuestAvailabilityChange as EventListener);
+      window.removeEventListener('submissions-changed', handleSubmissionsChanged);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [id, user, toast]);
 
   const getDifficultyStars = (difficulty: number) => {
@@ -208,10 +325,64 @@ const QuestDetail = () => {
               {user ? (
                 <>
                   {hasSubmitted ? (
-                    <Button disabled variant="secondary">
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Already Submitted
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button disabled variant="secondary">
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Already Submitted
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={async () => {
+                          // Manual refresh submission status
+                          if (!id || !user) return;
+                          try {
+                            console.log('🔄 Manual refresh triggered');
+                            // First check ALL submissions
+                            const { data: allSubs } = await supabase
+                              .from("Submissions")
+                              .select("id, status")
+                              .eq("quest_id", id)
+                              .eq("user_id", user.id);
+                            console.log('📋 All submissions:', allSubs);
+                            
+                            // Then check for active (non-rejected) submissions
+                            const { data: submission } = await supabase
+                              .from("Submissions")
+                              .select("id, status")
+                              .eq("quest_id", id)
+                              .eq("user_id", user.id)
+                              .neq("status", "rejected")
+                              .maybeSingle();
+                            
+                            console.log('✅ Active submission:', submission);
+                            setHasSubmitted(!!submission);
+                            
+                            if (!submission) {
+                              toast({
+                                title: "Status Updated",
+                                description: "Quest is now available for submission.",
+                              });
+                            } else {
+                              toast({
+                                title: "Status Check",
+                                description: `Submission found with status: ${submission.status}`,
+                              });
+                            }
+                          } catch (error) {
+                            console.error('❌ Error refreshing:', error);
+                            toast({
+                              title: "Error",
+                              description: "Failed to refresh status",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                        title="Refresh submission status"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
+                    </div>
                   ) : (
                     <Button
                       onClick={() => navigate(`/submit/${quest.id}`)}

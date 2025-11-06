@@ -15,6 +15,10 @@ import { Settings, Plus, Edit, Trash2, Users, BarChart, Flag, Crown, Shield, Use
 import { fixHiddenTemplePost } from '@/utils/fixCommunityImages';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { RecalculateAllPoints } from '@/components/admin/RecalculateAllPoints';
+import { CreditPointsButton } from '@/components/admin/CreditPointsButton';
+import { AIVerificationLogs } from '@/components/admin/AIVerificationLogs';
+import { TeamChallengeManager } from '@/components/admin/TeamChallengeManager';
+import { sendNotification } from '@/utils/notificationHelper';
 
 interface Quest {
   id: string;
@@ -339,16 +343,26 @@ export const AdminPanel = () => {
 
   const deleteQuest = async (questId: string) => {
     try {
-      const { error } = await supabase.from('Quests').delete().eq('id', questId);
-      if (error) throw error;
+      console.log('Attempting to delete quest:', questId);
+      
+      // Use service role for admin operations
+      const { error } = await supabase
+        .from('Quests')
+        .delete()
+        .eq('id', questId);
+        
+      if (error) {
+        console.error('Delete error:', error);
+        throw error;
+      }
 
       toast({ title: 'Success', description: 'Quest deleted successfully' });
       fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting quest:', error);
       toast({
         title: 'Error',
-        description: 'Failed to delete quest',
+        description: error?.message || 'Failed to delete quest. Check RLS policies.',
         variant: 'destructive'
       });
     }
@@ -372,10 +386,51 @@ export const AdminPanel = () => {
   };
 
   const updateSubmissionStatus = async (submissionId: string, status: string) => {
+    console.log('🔔 updateSubmissionStatus called:', { submissionId, status });
     try {
+      // Get submission details - fetch separately to avoid join issues
+      const { data: sub, error: subError } = await supabase
+        .from('Submissions')
+        .select('*')
+        .eq('id', submissionId)
+        .single();
+      
+      console.log('📋 Submission data:', sub);
+      console.log('❌ Submission error:', subError);
+      
+      // If submission fetch failed, try to continue with what we have
+      if (subError && !sub) {
+        console.warn('⚠️ Could not fetch submission details, but proceeding with status update');
+        // Try to update status anyway - the update might still work
+        const { error: updateError } = await supabase
+          .from('Submissions')
+          .update({ status })
+          .eq('id', submissionId);
+        
+        if (updateError) {
+          throw updateError;
+        }
+        
+        toast({ title: 'Success', description: 'Submission status updated' });
+        await fetchData();
+        return;
+      }
+      
+      // Get quest title separately if needed
+      let questTitle = 'Your quest';
+      if (sub?.quest_id) {
+        const { data: questData } = await supabase
+          .from('Quests')
+          .select('title')
+          .eq('id', sub.quest_id)
+          .single();
+        if (questData) {
+          questTitle = questData.title;
+        }
+      }
+      
       if (status === 'rejected') {
         // When rejecting: delete related assets and records
-        const { data: sub } = await supabase.from('Submissions').select('*').eq('id', submissionId).single();
         const keysToRemove: string[] = [];
         const collectKey = (url?: string | null) => {
           if (!url) return;
@@ -399,21 +454,128 @@ export const AdminPanel = () => {
           supabase.from('post_shares').delete().eq('submission_id', submissionId)
         ]);
 
-        const { error: delErr } = await supabase.from('Submissions').delete().eq('id', submissionId);
-        if (delErr) throw delErr;
-        toast({ title: 'Submission rejected', description: 'Submission and assets deleted' });
-        // Also remove from feed tables if mirrored anywhere custom (no-op here)
+        // Delete the submission - this makes the quest available for resubmission
+        // Use RPC function if available, otherwise direct delete
+        console.log('🗑️ Deleting submission:', submissionId, 'for quest:', sub?.quest_id);
+        
+        let deleteSuccess = false;
+        let deleteError = null;
+        
+        // Try using the RPC function first (more secure)
+        try {
+          const { data: rpcResult, error: rpcError } = await supabase.rpc('delete_submission_admin', {
+            p_submission_id: submissionId
+          });
+          
+          if (!rpcError && rpcResult?.success) {
+            console.log('✅ Submission deleted via RPC function:', rpcResult);
+            deleteSuccess = true;
+            // Use quest_id from RPC result if available
+            if (rpcResult.quest_id && !sub?.quest_id) {
+              sub = { ...sub, quest_id: rpcResult.quest_id };
+            }
+          } else {
+            console.warn('⚠️ RPC function not available or failed, trying direct delete:', rpcError);
+            deleteError = rpcError;
+          }
+        } catch (rpcException) {
+          console.warn('⚠️ RPC function call failed, trying direct delete:', rpcException);
+        }
+        
+        // Fallback to direct delete if RPC didn't work
+        if (!deleteSuccess) {
+          const { error: delErr, data: deleteResult } = await supabase.from('Submissions').delete().eq('id', submissionId).select();
+          if (delErr) {
+            console.error('❌ Error deleting submission:', delErr);
+            throw delErr;
+          }
+          console.log('✅ Submission deleted successfully via direct delete:', deleteResult);
+          deleteSuccess = true;
+        }
+        
+        // Send rejection notification
+        if (sub?.user_id) {
+          try {
+            console.log('Sending rejection notification to:', sub.user_id);
+            await sendNotification({
+              userId: sub.user_id,
+              type: 'quest_rejected',
+              title: 'Quest Submission Rejected',
+              message: `Your submission has been rejected. You can submit again for this quest.`,
+              relatedId: sub?.quest_id || submissionId,
+              relatedType: 'submission',
+            });
+            console.log('Rejection notification sent successfully');
+          } catch (notifError) {
+            console.error('Failed to send rejection notification:', notifError);
+          }
+        }
+        
+        toast({ 
+          title: 'Submission rejected', 
+          description: 'Submission deleted. Quest is now available for resubmission.' 
+        });
+        
+        // Verify deletion worked
+        const { data: verifyDelete } = await supabase
+          .from('Submissions')
+          .select('id')
+          .eq('id', submissionId)
+          .maybeSingle();
+        
+        if (verifyDelete) {
+          console.error('⚠️ WARNING: Submission still exists after deletion attempt!', verifyDelete);
+        } else {
+          console.log('✅ Verification: Submission successfully deleted');
+        }
+        
+        // Broadcast events IMMEDIATELY after deletion
+        console.log('📢 Broadcasting events for quest:', sub?.quest_id);
+        window.dispatchEvent(new CustomEvent('submissions-changed'));
+        window.dispatchEvent(new CustomEvent('quest-availability-changed', { 
+          detail: { submissionId, questId: sub?.quest_id, userId: sub?.user_id } 
+        }));
       } else {
         const { error } = await supabase
           .from('Submissions')
           .update({ status })
           .eq('id', submissionId);
         if (error) throw error;
+        
+        // Send approval notification
+        console.log('🎯 Checking notification conditions:', { status, hasUserId: !!sub?.user_id, sub });
+        if (status === 'verified' && sub?.user_id) {
+          try {
+            console.log('📨 Sending approval notification to:', sub.user_id);
+            console.log('🎮 Quest title:', questTitle);
+            await sendNotification({
+              userId: sub.user_id,
+              type: 'quest_approved',
+              title: 'Quest Completed! 🎉',
+              message: `Your submission for "${questTitle}" has been approved! You earned points and XP.`,
+              relatedId: submissionId,
+              relatedType: 'submission',
+            });
+            console.log('✅ Approval notification sent successfully');
+          } catch (notifError) {
+            console.error('❌ Failed to send approval notification:', notifError);
+            // Don't throw - notification failure shouldn't block status update
+          }
+        } else {
+          console.log('⚠️ Skipping notification - conditions not met', { 
+            status, 
+            hasUserId: !!sub?.user_id, 
+            userId: sub?.user_id 
+          });
+        }
+        
         toast({ title: 'Success', description: 'Submission status updated' });
       }
       await fetchData();
-      // Broadcast an event so the Community page can refresh if open
-      window.dispatchEvent(new CustomEvent('submissions-changed'));
+      // Broadcast events so pages can refresh (for non-rejected status changes)
+      if (status !== 'rejected') {
+        window.dispatchEvent(new CustomEvent('submissions-changed'));
+      }
     } catch (error) {
       console.error('Error updating submission:', error);
       toast({
@@ -559,11 +721,13 @@ export const AdminPanel = () => {
         </div>
 
         <Tabs defaultValue="quests" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="quests">Quests</TabsTrigger>
             <TabsTrigger value="submissions">Submissions</TabsTrigger>
             <TabsTrigger value="posts">Community Posts</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="challenges">Team Challenges</TabsTrigger>
+            <TabsTrigger value="verifications">AI Verifications</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="points">Points</TabsTrigger>
           </TabsList>
@@ -1093,7 +1257,16 @@ export const AdminPanel = () => {
           </TabsContent>
 
           <TabsContent value="points" className="space-y-6">
+            <CreditPointsButton />
             <RecalculateAllPoints />
+          </TabsContent>
+
+          <TabsContent value="challenges" className="space-y-6">
+            <TeamChallengeManager />
+          </TabsContent>
+
+          <TabsContent value="verifications" className="space-y-6">
+            <AIVerificationLogs />
           </TabsContent>
         </Tabs>
 
