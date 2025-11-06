@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star, MapPin, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Star, MapPin, Clock, Sparkles, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SearchAndFilter } from "@/components/search/SearchAndFilter";
 import { useAnalytics } from "@/hooks/useSimpleAnalytics";
@@ -32,7 +33,74 @@ const AllQuests = () => {
   const [quests, setQuests] = useState<Quest[]>([]);
   const [aiQuests, setAiQuests] = useState<Quest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'regular' | 'ai' | 'recommended'>('regular');
+
+  const fetchUserProfile = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+      setUserProfile(data);
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+  };
+
+  const fetchAIQuests = async () => {
+    if (!user) return;
+
+    try {
+      // Fetch from both ai_generated_quests and suggested_quests
+      const [aiQuestsResult, suggestedQuestsResult] = await Promise.all([
+        supabase
+          .from("ai_generated_quests")
+          .select("*")
+          .eq("is_active", true)
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("suggested_quests")
+          .select("*")
+          .eq("is_active", true)
+          .eq("user_id", user.id)
+          .gte("expires_at", new Date().toISOString())
+          .order("generated_at", { ascending: false })
+      ]);
+
+      if (aiQuestsResult.error) throw aiQuestsResult.error;
+      if (suggestedQuestsResult.error) throw suggestedQuestsResult.error;
+
+      // Merge and transform suggested quests to match AI quest format
+      const aiQuests = aiQuestsResult.data || [];
+      const suggestedQuests = (suggestedQuestsResult.data || []).map((sq: any) => ({
+        id: sq.id,
+        title: sq.title,
+        description: sq.description,
+        quest_type: sq.quest_type,
+        difficulty: sq.difficulty,
+        location: sq.location,
+        generated_by: 'suggestions',
+        created_at: sq.generated_at || sq.created_at
+      }));
+
+      // Combine and sort by creation date
+      const allQuests = [...aiQuests, ...suggestedQuests].sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      setAiQuests(allQuests);
+    } catch (error) {
+      console.error("Error fetching AI quests:", error);
+    }
+  };
 
   useEffect(() => {
     trackPageView('/all-quests');
@@ -49,18 +117,13 @@ const AllQuests = () => {
         if (regularError) throw regularError;
 
         // Fetch AI-generated quests (only for current user)
-        const { data: aiGeneratedQuests, error: aiError } = user ? await supabase
-          .from("ai_generated_quests")
-          .select("*")
-          .eq("is_active", true)
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false }) : { data: [], error: null };
-
-        if (aiError) throw aiError;
+        if (user) {
+          await fetchAIQuests();
+          await fetchUserProfile();
+        }
 
         setAllQuests(regularQuests || []);
         setQuests(regularQuests || []);
-        setAiQuests(aiGeneratedQuests || []);
       } catch (error) {
         console.error("Error fetching quests:", error);
         toast({
@@ -74,10 +137,38 @@ const AllQuests = () => {
     };
 
     fetchQuests();
-  }, [toast, trackPageView]);
+  }, [toast, trackPageView, user]);
 
   const handleFilteredQuests = (filteredQuests: Quest[]) => {
     setQuests(filteredQuests);
+  };
+
+  const generateNewQuest = async () => {
+    if (!user || generating) return;
+
+    setGenerating(true);
+    try {
+      const { error } = await supabase.functions.invoke('generate-quest-suggestions');
+
+      if (error) throw error;
+
+      toast({
+        title: "✨ New quest generated!",
+        description: "Check out your personalized AI-generated quest.",
+      });
+
+      // Refresh the AI quest list
+      await fetchAIQuests();
+    } catch (error) {
+      console.error('Error generating quest:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate new quest. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const getDifficultyStars = (difficulty: number) => {
@@ -212,7 +303,24 @@ const AllQuests = () => {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
               </div>
             ) : aiQuests.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold">Your AI-Generated Quests</h2>
+                  <Button 
+                    onClick={generateNewQuest} 
+                    disabled={generating}
+                    size="sm"
+                    variant="outline"
+                  >
+                    {generating ? (
+                      <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Sparkles className="h-4 w-4 mr-2" />
+                    )}
+                    {generating ? "Generating..." : "Generate New Quest"}
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {aiQuests.map((quest) => (
                   <Card key={quest.id} className="cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-l-4 border-l-purple-500 bg-gradient-to-br from-purple-50/50 to-background dark:from-purple-950/20" onClick={() => navigate(`/submit/${quest.id}`)}>
                     <CardHeader>
@@ -248,6 +356,7 @@ const AllQuests = () => {
                     </CardContent>
                   </Card>
                 ))}
+                </div>
               </div>
             ) : (
               <div className="text-center py-12">

@@ -53,11 +53,13 @@ export const AIQuestGenerator = () => {
     }
   };
 
-  const fetchAIQuests = async () => {
+  const fetchAIQuests = async (showLoading = true) => {
     if (!user) return;
 
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
       const { data, error } = await supabase
         .from('ai_generated_quests')
         .select('*')
@@ -70,13 +72,17 @@ export const AIQuestGenerator = () => {
       setAiQuests(data || []);
     } catch (error) {
       console.error('Error fetching AI quests:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load AI-generated quests",
-        variant: "destructive"
-      });
+      if (showLoading) {
+        toast({
+          title: "Error",
+          description: "Failed to load AI-generated quests",
+          variant: "destructive"
+        });
+      }
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
 
@@ -146,7 +152,17 @@ export const AIQuestGenerator = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        // Check if error has a message
+        const errorMessage = error.message || 'Unknown error occurred';
+        throw new Error(errorMessage);
+      }
+
+      // Check if the response indicates failure
+      if (data && data.success === false) {
+        throw new Error(data.error || data.message || 'Quest generation failed');
+      }
 
       toast({
         title: "Quest generated!",
@@ -155,14 +171,25 @@ export const AIQuestGenerator = () => {
           : "A new quest has been created for you"
       });
 
-      // Refresh the quest list
-      await fetchAIQuests();
+      // Refresh the quest list without showing loading spinner
+      await fetchAIQuests(false);
+      
+      // Also refresh user profile in case location was updated
+      await fetchUserProfile();
     } catch (error) {
       console.error('Error generating quest:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast({
         title: "Generation failed",
-        description: "Unable to generate a new quest. Please try again later.",
-        variant: "destructive"
+        description: errorMessage.includes('GEMINI_API_KEY') 
+          ? "AI service is not configured. Please contact support."
+          : errorMessage.includes('profile')
+          ? "Unable to load your profile. Please try again."
+          : errorMessage.length > 100
+          ? "Unable to generate a new quest. Please try again later."
+          : errorMessage,
+        variant: "destructive",
+        duration: 8000
       });
     } finally {
       setGenerating(false);

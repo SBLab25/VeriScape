@@ -536,10 +536,13 @@ export const AdminPanel = () => {
           detail: { submissionId, questId: sub?.quest_id, userId: sub?.user_id } 
         }));
       } else {
+        // Update status - explicitly only update status field to avoid trigger issues
         const { error } = await supabase
           .from('Submissions')
-          .update({ status })
-          .eq('id', submissionId);
+          .update({ status } as any)
+          .eq('id', submissionId)
+          .select('id')
+          .single();
         if (error) throw error;
         
         // Send approval notification

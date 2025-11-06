@@ -378,12 +378,18 @@ BEGIN
   IF NEW.status IN ('approved', 'verified') AND (OLD.status IS NULL OR OLD.status NOT IN ('approved', 'verified')) THEN
     -- Count quests completed today by this user (using IST timezone)
     -- IST is UTC+5:30, so we need to adjust the date comparison
+    -- Count the current submission being approved + all other submissions approved today
+    -- Use submitted_at for date comparison (updated_at may not exist yet)
     SELECT COUNT(DISTINCT quest_id) INTO quest_count_today
     FROM "Submissions"
     WHERE user_id = NEW.user_id
       AND status IN ('approved', 'verified')
-      AND DATE(updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata') = 
-          DATE(NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata');
+      AND (
+        id = NEW.id  -- Include the current submission being approved
+        OR
+        DATE(submitted_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata') = 
+          DATE(NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata')
+      );
     
     -- Update all active daily challenges with requirement_type 'quests_completed'
     FOR challenge_record IN

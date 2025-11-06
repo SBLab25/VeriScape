@@ -20,20 +20,38 @@ interface SendNotificationParams {
 }
 
 export const sendNotification = async (params: SendNotificationParams) => {
+  // Use database function directly (more reliable than edge function)
+  // Edge function has CORS issues in some environments
   try {
-    // Try edge function first
-    const { data, error } = await supabase.functions.invoke('send-notification', {
-      body: {
-        user_id: params.userId,
-        type: params.type,
-        title: params.title,
-        message: params.message,
-        related_id: params.relatedId,
-        related_type: params.relatedType,
-      },
-    });
+    const { data: functionData, error: functionError } = await supabase.rpc(
+      'create_notification',
+      {
+        p_user_id: params.userId,
+        p_type: params.type,
+        p_title: params.title,
+        p_message: params.message,
+        p_related_id: params.relatedId || null,
+        p_related_type: params.relatedType || null,
+      }
+    );
 
-    if (error) throw error;
+    if (functionError) {
+      console.warn('⚠️ Database function failed, trying edge function:', functionError);
+      throw functionError;
+    }
+
+    // Fetch the created notification
+    const { data: fetchedNotification } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('id', functionData)
+      .single();
+
+    if (!fetchedNotification) {
+      throw new Error('Notification created but could not be fetched');
+    }
+
+    console.log('✅ Notification created via database function:', fetchedNotification);
     
     // Play notification sound if enabled
     playNotificationSound();
@@ -41,67 +59,24 @@ export const sendNotification = async (params: SendNotificationParams) => {
     // Show browser push notification if enabled
     showBrowserNotification(params.title, params.message);
     
-    return data;
+    return fetchedNotification;
   } catch (error) {
-    console.warn('⚠️ Edge function failed, trying direct database insert:', error);
+    // Fallback: Try edge function if database function fails
+    console.warn('⚠️ Database function failed, trying edge function:', error);
     
-    // Fallback: try direct insert, then database function if that fails
     try {
-      // First try direct insert (should work if RLS policies are set up)
-      const { data: notificationData, error: insertError } = await supabase
-        .from('notifications')
-        .insert({
+      const { data, error: edgeError } = await supabase.functions.invoke('send-notification', {
+        body: {
           user_id: params.userId,
           type: params.type,
           title: params.title,
           message: params.message,
           related_id: params.relatedId,
           related_type: params.relatedType,
-        })
-        .select()
-        .single();
+        },
+      });
 
-      if (insertError) {
-        // If direct insert fails due to RLS, try using the database function
-        console.warn('⚠️ Direct insert failed, trying database function:', insertError);
-        
-        const { data: functionData, error: functionError } = await supabase.rpc(
-          'create_notification',
-          {
-            p_user_id: params.userId,
-            p_type: params.type,
-            p_title: params.title,
-            p_message: params.message,
-            p_related_id: params.relatedId || null,
-            p_related_type: params.relatedType || null,
-          }
-        );
-
-        if (functionError) {
-          console.error('❌ Database function also failed:', functionError);
-          throw functionError;
-        }
-
-        // Fetch the created notification
-        const { data: fetchedNotification } = await supabase
-          .from('notifications')
-          .select('*')
-          .eq('id', functionData)
-          .single();
-
-        console.log('✅ Notification created via database function:', fetchedNotification);
-        
-        // Play notification sound if enabled
-        playNotificationSound();
-        
-        // Show browser push notification if enabled
-        showBrowserNotification(params.title, params.message);
-        
-        return fetchedNotification;
-      }
-
-      // If we get here, direct insert succeeded
-      console.log('✅ Notification created directly in database:', notificationData);
+      if (edgeError) throw edgeError;
       
       // Play notification sound if enabled
       playNotificationSound();
@@ -109,10 +84,12 @@ export const sendNotification = async (params: SendNotificationParams) => {
       // Show browser push notification if enabled
       showBrowserNotification(params.title, params.message);
       
-      return notificationData;
-    } catch (fallbackError) {
-      console.error('❌ All notification methods failed (edge function, direct insert, database function):', fallbackError);
-      throw fallbackError;
+      return data;
+    } catch (edgeError) {
+      console.error('❌ All notification methods failed:', edgeError);
+      // Don't throw - notifications are not critical, just log the error
+      console.error('Failed to send notification:', params);
+      return null;
     }
   }
 };

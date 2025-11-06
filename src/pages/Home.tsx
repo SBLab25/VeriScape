@@ -15,7 +15,6 @@ import { QuestRecommendations } from "@/components/performance/QuestRecommendati
 import { QuestSuggestionsCarousel } from "@/components/quest/QuestSuggestionsCarousel";
 import { TopNavbar } from "@/components/navigation/TopNavbar";
 import { MiniCalendar } from "@/components/calendar/MiniCalendar";
-import { AIQuestGenerator } from "@/components/quest/AIQuestGenerator";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useUserBadges } from "@/hooks/useUserBadges";
 import { GamificationDashboard } from "@/components/gamification/GamificationDashboard";
@@ -308,9 +307,6 @@ const Home = () => {
                 <SearchAndFilter quests={allQuests} onFilteredQuests={handleFilteredQuests} />
               {/* AI-Powered Quest Suggestions */}
               <QuestSuggestionsCarousel />
-
-              {/* AI Quest Generator */}
-              <AIQuestGenerator />
 
               {/* Featured Quest */}
               <div>
