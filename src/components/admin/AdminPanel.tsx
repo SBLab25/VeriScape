@@ -975,9 +975,13 @@ export const AdminPanel = () => {
                           {submission.status}
                         </Badge>
                       </div>
-                      {submission.description && (
-                         <p className="text-sm mb-3">{submission.description}</p>
-                       )}
+                      {submission.description && (() => {
+                        // Remove AI quest ID metadata from description for display
+                        const cleanDescription = submission.description.replace(/\n\[AI_QUEST_ID:[a-f0-9-]+\]/i, '').trim();
+                        return cleanDescription ? (
+                          <p className="text-sm mb-3">{cleanDescription}</p>
+                        ) : null;
+                      })()}
                        {submission.photo_url && (
                          <div className="mb-3">
                            <img 

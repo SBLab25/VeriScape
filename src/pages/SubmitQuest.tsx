@@ -61,18 +61,29 @@ const SubmitQuest = () => {
         if (regularQuestData) {
           questData = regularQuestData;
         } else {
-          // If not found in regular quests, try suggested_quests (AI-generated)
-          const { data: aiQuestData, error: aiQuestError } = await supabase
-            .from("suggested_quests")
-            .select("id, title, description")
-            .eq("id", id)
-            .maybeSingle();
+          // If not found in regular quests, try AI-generated quests tables
+          // Check both ai_generated_quests and suggested_quests
+          const [aiGeneratedResult, suggestedResult] = await Promise.all([
+            supabase
+              .from("ai_generated_quests")
+              .select("id, title, description")
+              .eq("id", id)
+              .maybeSingle(),
+            supabase
+              .from("suggested_quests")
+              .select("id, title, description")
+              .eq("id", id)
+              .maybeSingle()
+          ]);
 
-          if (aiQuestData) {
-            questData = aiQuestData;
+          if (aiGeneratedResult.data) {
+            questData = aiGeneratedResult.data;
+            foundInAI = true;
+          } else if (suggestedResult.data) {
+            questData = suggestedResult.data;
             foundInAI = true;
           } else {
-            error = aiQuestError || regularQuestError;
+            error = aiGeneratedResult.error || suggestedResult.error || regularQuestError;
           }
         }
 
@@ -250,13 +261,19 @@ const SubmitQuest = () => {
       }
 
       // Create submission
+      // For AI quests, we need to track the quest ID separately since quest_id has FK constraint
+      // We'll store it in a separate tracking table after creating the submission
+      const submissionDescription = isAIQuest 
+        ? description.trim() 
+        : description.trim();
+      
       const payload: any = {
         user_id: user.id,
-        description: description.trim(),
+        description: submissionDescription,
         photo_url: photoUrl,
         geo_location: geoLocation.trim() || null,
         status: 'pending',
-        quest_id: isAIQuest ? null : quest.id,
+        quest_id: isAIQuest ? null : quest.id, // AI quests can't use quest_id due to FK constraint
       };
 
       const { data: submission, error: submitError } = await supabase
@@ -266,6 +283,23 @@ const SubmitQuest = () => {
         .single();
 
       if (submitError) throw submitError;
+
+      // For AI quests, create a tracking record to link submission to quest
+      if (isAIQuest && submission && quest.id) {
+        try {
+          // Check if ai_quest_submissions table exists, if not we'll use description workaround
+          // Store AI quest ID in description as metadata (format: [AI_QUEST_ID:quest_id])
+          // This allows us to extract it later for completion tracking
+          const updatedDescription = `${submissionDescription}\n[AI_QUEST_ID:${quest.id}]`;
+          await supabase
+            .from("Submissions")
+            .update({ description: updatedDescription })
+            .eq("id", submission.id);
+        } catch (trackingError) {
+          // If tracking fails, log but don't block submission
+          console.warn('Failed to track AI quest ID:', trackingError);
+        }
+      }
 
       // Check for active instant_verify powerup
       const activePowerUps = getActivePowerUps();

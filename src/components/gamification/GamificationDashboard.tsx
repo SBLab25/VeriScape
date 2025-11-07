@@ -63,8 +63,19 @@ export const GamificationDashboard = () => {
   const xpForNextLevel = getXPForNextLevel(level);
   const xpProgress = ((xp % 100) / 100) * 100;
 
-  const activeChallenges = challenges.filter(c => c.is_active);
+  // Filter out expired challenges and ensure they're active
+  const now = new Date();
+  const activeChallenges = challenges.filter(c => {
+    // Check if challenge is active and not expired
+    const isActive = c.is_active;
+    const isNotExpired = new Date(c.end_date) > now;
+    return isActive && isNotExpired;
+  });
+  
+  // Filter daily challenges (only show non-expired ones)
   const dailyChallenges = activeChallenges.filter(c => c.type === 'daily');
+  
+  // Filter weekly challenges (only show non-expired ones)
   const weeklyChallenges = activeChallenges.filter(c => c.type === 'weekly');
   const recentAchievements = userAchievements.slice(0, 6);
 

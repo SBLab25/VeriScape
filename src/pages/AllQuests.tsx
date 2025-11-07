@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Star, MapPin, Clock, Sparkles, RefreshCw } from "lucide-react";
+import { Star, MapPin, Clock, Sparkles, RefreshCw, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SearchAndFilter } from "@/components/search/SearchAndFilter";
 import { useAnalytics } from "@/hooks/useSimpleAnalytics";
@@ -36,6 +36,8 @@ const AllQuests = () => {
   const [generating, setGenerating] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'regular' | 'ai' | 'recommended'>('regular');
+  const [completedQuestIds, setCompletedQuestIds] = useState<Set<string>>(new Set());
+  const [isFetching, setIsFetching] = useState(false);
 
   const fetchUserProfile = async () => {
     if (!user) return;
@@ -51,6 +53,157 @@ const AllQuests = () => {
       setUserProfile(data);
     } catch (error) {
       console.error('Error fetching user profile:', error);
+    }
+  };
+
+  const fetchCompletedQuests = async () => {
+    if (!user) return;
+
+    try {
+      const completedIds = new Set<string>();
+
+      // Fetch regular quest completions (with quest_id)
+      const { data: regularSubmissions, error: regularError } = await supabase
+        .from('Submissions')
+        .select('quest_id, status')
+        .eq('user_id', user.id)
+        .in('status', ['verified', 'approved'])
+        .not('quest_id', 'is', null)
+        .limit(1000);
+
+      if (regularError) throw regularError;
+
+      if (regularSubmissions) {
+        regularSubmissions.forEach((sub: any) => {
+          if (sub.quest_id) {
+            completedIds.add(sub.quest_id);
+          }
+        });
+      }
+
+      // For AI quests, we can't use quest_id due to foreign key constraints
+      // We'll extract AI quest IDs from submission descriptions (format: [AI_QUEST_ID:quest_id])
+      // and also use heuristic matching as fallback
+      const { data: aiSubmissions, error: aiError } = await supabase
+        .from('Submissions')
+        .select('id, submitted_at, status, description')
+        .eq('user_id', user.id)
+        .in('status', ['verified', 'approved'])
+        .is('quest_id', null)
+        .order('submitted_at', { ascending: true })
+        .limit(100);
+
+      if (aiSubmissions && aiSubmissions.length > 0 && !aiError) {
+        // First, try to extract AI quest IDs from submission descriptions
+        // Format: [AI_QUEST_ID:quest_id] at the end of description
+        const aiQuestIdPattern = /\[AI_QUEST_ID:([a-f0-9-]+)\]/i;
+        
+        aiSubmissions.forEach((submission: any) => {
+          if (submission.description) {
+            const match = submission.description.match(aiQuestIdPattern);
+            if (match && match[1]) {
+              // Found AI quest ID in description - directly mark as completed
+              completedIds.add(match[1]);
+            }
+          }
+        });
+
+        // For submissions without AI quest ID in description, use heuristic matching
+        // Get the most recent submission date - quests created after this should never be marked
+        const submissionsWithoutId = aiSubmissions.filter((s: any) => {
+          if (!s.description) return true;
+          const match = s.description.match(aiQuestIdPattern);
+          return !match || !match[1];
+        });
+
+        if (submissionsWithoutId.length > 0) {
+          const mostRecentSubmissionDate = Math.max(
+            ...submissionsWithoutId.map((s: any) => new Date(s.submitted_at).getTime())
+          );
+
+          // Fetch user's AI quests with creation dates
+          const [aiQuestsResult, suggestedQuestsResult] = await Promise.all([
+            supabase
+              .from('ai_generated_quests')
+              .select('id, created_at')
+              .eq('user_id', user.id)
+              .eq('is_active', true)
+              .order('created_at', { ascending: true }),
+            supabase
+              .from('suggested_quests')
+              .select('id, generated_at, created_at')
+              .eq('user_id', user.id)
+              .eq('is_active', true)
+              .gte('expires_at', new Date().toISOString())
+              .order('generated_at', { ascending: true })
+          ]);
+
+          // Combine all AI quests with their creation dates
+          const allAIQuests: Array<{id: string, created_at: string}> = [];
+          if (aiQuestsResult.data) {
+            aiQuestsResult.data.forEach((q: any) => {
+              allAIQuests.push({ id: q.id, created_at: q.created_at });
+            });
+          }
+          if (suggestedQuestsResult.data) {
+            suggestedQuestsResult.data.forEach((q: any) => {
+              allAIQuests.push({ 
+                id: q.id, 
+                created_at: q.generated_at || q.created_at 
+              });
+            });
+          }
+
+          // Sort by creation date
+          allAIQuests.sort((a, b) => 
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+
+          // Match submissions to quests using heuristic (only for submissions without ID)
+          const usedQuestIndices = new Set<number>();
+          const now = Date.now();
+          
+          submissionsWithoutId.forEach((submission: any) => {
+            const submissionDate = new Date(submission.submitted_at).getTime();
+            
+            // Find the best matching quest using heuristic
+            const maxDaysBefore = 30 * 24 * 60 * 60 * 1000; // 30 days
+            const minTimeBefore = 60 * 60 * 1000; // 1 hour
+            const minTimeSinceCreation = 5 * 60 * 1000; // 5 minutes
+            
+            for (let i = 0; i < allAIQuests.length; i++) {
+              if (usedQuestIndices.has(i)) continue;
+              if (completedIds.has(allAIQuests[i].id)) continue; // Already matched via ID
+              
+              const questDate = new Date(allAIQuests[i].created_at).getTime();
+              const timeDiff = submissionDate - questDate;
+              const timeSinceQuestCreation = now - questDate;
+              
+              if (
+                timeDiff >= minTimeBefore &&
+                timeDiff <= maxDaysBefore &&
+                questDate < mostRecentSubmissionDate &&
+                timeSinceQuestCreation >= minTimeSinceCreation
+              ) {
+                completedIds.add(allAIQuests[i].id);
+                usedQuestIndices.add(i);
+                break;
+              }
+            }
+          });
+        }
+        
+        console.log('AI Quest Completion Matching:', {
+          totalSubmissions: aiSubmissions.length,
+          matchedViaId: Array.from(completedIds).length,
+          matchedViaHeuristic: 0
+        });
+      }
+
+      setCompletedQuestIds(completedIds);
+    } catch (error) {
+      console.error('Error fetching completed quests:', error);
+      // Don't throw - just log, so it doesn't break the main quest fetch
     }
   };
 
@@ -79,7 +232,16 @@ const AllQuests = () => {
       if (suggestedQuestsResult.error) throw suggestedQuestsResult.error;
 
       // Merge and transform suggested quests to match AI quest format
-      const aiQuests = aiQuestsResult.data || [];
+      const aiQuests = (aiQuestsResult.data || []).map((aq: any) => ({
+        id: aq.id,
+        title: aq.title,
+        description: aq.description,
+        quest_type: aq.quest_type,
+        difficulty: aq.difficulty,
+        location: aq.location,
+        is_active: aq.is_active ?? true,
+        created_at: aq.created_at
+      }));
       const suggestedQuests = (suggestedQuestsResult.data || []).map((sq: any) => ({
         id: sq.id,
         title: sq.title,
@@ -87,6 +249,7 @@ const AllQuests = () => {
         quest_type: sq.quest_type,
         difficulty: sq.difficulty,
         location: sq.location,
+        is_active: sq.is_active ?? true,
         generated_by: 'suggestions',
         created_at: sq.generated_at || sq.created_at
       }));
@@ -105,7 +268,11 @@ const AllQuests = () => {
   useEffect(() => {
     trackPageView('/all-quests');
     
+    // Prevent multiple simultaneous fetches
+    if (isFetching) return;
+    
     const fetchQuests = async () => {
+      setIsFetching(true);
       try {
         // Fetch regular quests
         const { data: regularQuests, error: regularError } = await supabase
@@ -116,14 +283,18 @@ const AllQuests = () => {
 
         if (regularError) throw regularError;
 
-        // Fetch AI-generated quests (only for current user)
-        if (user) {
-          await fetchAIQuests();
-          await fetchUserProfile();
-        }
-
         setAllQuests(regularQuests || []);
         setQuests(regularQuests || []);
+
+        // Fetch AI-generated quests and user data (only for current user)
+        if (user) {
+          // Run these in parallel but with error handling
+          await Promise.allSettled([
+            fetchAIQuests(),
+            fetchUserProfile(),
+            fetchCompletedQuests()
+          ]);
+        }
       } catch (error) {
         console.error("Error fetching quests:", error);
         toast({
@@ -133,11 +304,12 @@ const AllQuests = () => {
         });
       } finally {
         setLoading(false);
+        setIsFetching(false);
       }
     };
 
     fetchQuests();
-  }, [toast, trackPageView, user]);
+  }, [user]); // Removed toast and trackPageView from dependencies to prevent re-runs
 
   const handleFilteredQuests = (filteredQuests: Quest[]) => {
     setQuests(filteredQuests);
@@ -157,8 +329,11 @@ const AllQuests = () => {
         description: "Check out your personalized AI-generated quest.",
       });
 
-      // Refresh the AI quest list
-      await fetchAIQuests();
+      // Refresh the AI quest list and completion status
+      await Promise.all([
+        fetchAIQuests(),
+        fetchCompletedQuests() // Refresh to ensure new quests aren't marked as completed
+      ]);
     } catch (error) {
       console.error('Error generating quest:', error);
       toast({
@@ -255,8 +430,15 @@ const AllQuests = () => {
                 </div>
               ) : quests.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {quests.map((quest) => (
-                    <Card key={quest.id} className="cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-gradient-to-br from-background to-accent/5" onClick={() => navigate(`/quest/${quest.id}`)}>
+                  {quests.map((quest) => {
+                    const isCompleted = completedQuestIds.has(quest.id);
+                    return (
+                    <Card key={quest.id} className={`cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-gradient-to-br from-background to-accent/5 relative ${isCompleted ? 'ring-2 ring-green-500/50' : ''}`} onClick={() => navigate(`/quest/${quest.id}`)}>
+                      {isCompleted && (
+                        <div className="absolute top-2 right-2 z-20 bg-green-500 rounded-full p-1 shadow-md">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-black stroke-[3]" />
+                        </div>
+                      )}
                       <CardHeader>
                         <div className="flex items-start justify-between">
                           <CardTitle className="text-lg line-clamp-2">{quest.title}</CardTitle>
@@ -284,7 +466,8 @@ const AllQuests = () => {
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-12">
@@ -321,8 +504,15 @@ const AllQuests = () => {
                   </Button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {aiQuests.map((quest) => (
-                  <Card key={quest.id} className="cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-l-4 border-l-purple-500 bg-gradient-to-br from-purple-50/50 to-background dark:from-purple-950/20" onClick={() => navigate(`/submit/${quest.id}`)}>
+                {aiQuests.map((quest) => {
+                  const isCompleted = completedQuestIds.has(quest.id);
+                  return (
+                  <Card key={quest.id} className={`cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-l-4 border-l-purple-500 bg-gradient-to-br from-purple-50/50 to-background dark:from-purple-950/20 relative ${isCompleted ? 'ring-2 ring-green-500/50' : ''}`} onClick={() => navigate(`/submit/${quest.id}`)}>
+                    {isCompleted && (
+                      <div className="absolute top-2 right-2 z-20 bg-green-500 rounded-full p-1 shadow-md">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-black stroke-[3]" />
+                      </div>
+                    )}
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <CardTitle className="text-lg line-clamp-2">{quest.title}</CardTitle>
@@ -355,7 +545,8 @@ const AllQuests = () => {
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                  );
+                })}
                 </div>
               </div>
             ) : (

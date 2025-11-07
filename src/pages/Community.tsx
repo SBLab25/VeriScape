@@ -45,19 +45,6 @@ interface UnifiedPost {
   };
 }
 
-interface Comment {
-  id: string;
-  user_id: string;
-  post_id: string;
-  content: string;
-  created_at: string;
-  user_profile?: {
-    username: string | null;
-    full_name: string | null;
-    avatar_url: string | null;
-  };
-}
-
 const Community = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -112,9 +99,14 @@ const Community = () => {
     const refetch = () => fetchPosts();
     window.addEventListener('submissions-changed', refetch);
     window.addEventListener('community-posts-changed', refetch);
+    // Refresh posts when likes/comments change
+    const refreshInterval = setInterval(() => {
+      fetchPosts();
+    }, 30000); // Refresh every 30 seconds to sync data
     return () => {
       window.removeEventListener('submissions-changed', refetch);
       window.removeEventListener('community-posts-changed', refetch);
+      clearInterval(refreshInterval);
     };
   }, []);
 
@@ -140,10 +132,10 @@ const Community = () => {
           .select("id, user_id, title, content, post_type, tags, image_urls, created_at")
           .order("created_at", { ascending: false }),
         
-        // Quest submissions (verified)
+        // Quest submissions (verified) - exclude quest_id from display
         supabase
           .from("Submissions")
-          .select("id, description, photo_url, image_urls, user_id, geo_location, submitted_at")
+          .select("id, description, photo_url, image_urls, user_id, geo_location, submitted_at, quest_id")
           .eq("status", "verified")
           .order("submitted_at", { ascending: false })
       ]);
@@ -222,9 +214,10 @@ const Community = () => {
             supabase.from("post_shares").select("user_id").eq("submission_id", s.id)
           ]);
 
-          const likes = likesRes.data || [];
-          const comments = commentsRes.data || [];
-          const shares = sharesRes.data || [];
+          // Ensure we have valid data arrays
+          const likes = (likesRes.data || []);
+          const comments = (commentsRes.data || []);
+          const shares = (sharesRes.data || []);
           const profile = allProfiles.find((pr) => pr.id === s.user_id);
 
           // Process image URLs - ensure consistency between quest submissions and community posts
@@ -236,12 +229,15 @@ const Community = () => {
             processedImageUrls = [s.photo_url];
           }
 
+          // Clean description to remove AI quest ID metadata if present
+          const cleanDescription = s.description?.replace(/\n\[AI_QUEST_ID:[a-f0-9-]+\]/i, '').trim() || '';
+          
           return {
             id: s.id,
             user_id: s.user_id,
             type: 'quest',
-            content: s.description || '',
-            description: s.description,
+            content: cleanDescription,
+            description: cleanDescription,
             image_urls: processedImageUrls,
             created_at: s.submitted_at,
             geo_location: s.geo_location,
@@ -421,6 +417,36 @@ const Community = () => {
       });
     } catch (err) {
       console.error("Error toggling share", err);
+    }
+  };
+
+
+  const refreshPostCommentCount = async (postId: string) => {
+    const post = posts.find((p) => p.id === postId);
+    if (!post) return;
+
+    try {
+      let commentsRes;
+      if (post.type === 'community') {
+        commentsRes = await (supabase as any)
+          .from("community_post_comments")
+          .select("id")
+          .eq("post_id", postId);
+      } else {
+        commentsRes = await supabase
+          .from("post_comments")
+          .select("id")
+          .eq("submission_id", postId);
+      }
+
+      if (commentsRes.error) throw commentsRes.error;
+      const commentsCount = (commentsRes.data || []).length;
+
+      setPosts(prev => prev.map(p => 
+        p.id === postId ? { ...p, comments_count: commentsCount } : p
+      ));
+    } catch (err) {
+      console.error("Error refreshing comment count:", err);
     }
   };
 
@@ -679,15 +705,6 @@ const Community = () => {
                           <p className="text-sm font-semibold mb-1">
                             {post.likes_count} {post.likes_count === 1 ? 'like' : 'likes'}
                           </p>
-                        )}
-
-                        {post.comments_count > 0 && (
-                          <button
-                            className="text-sm text-muted-foreground mt-1 hover:text-foreground"
-                            onClick={() => navigate(`/post/${post.id}`)}
-                          >
-                            View all {post.comments_count} comment{post.comments_count !== 1 ? 's' : ''}
-                          </button>
                         )}
                       </div>
                     </div>
