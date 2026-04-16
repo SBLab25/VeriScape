@@ -24,6 +24,8 @@ import PostDetail from "./pages/PostDetail";
 import MobileTest from "./pages/MobileTest";
 import Admin from "./pages/Admin";
 
+// 1. ADD YOUR IMPORT HERE (Make sure the path matches where you saved the file)
+import { useCJITracker } from "@/hooks/useCJITracker";
 
 const queryClient = new QueryClient();
 
@@ -65,39 +67,45 @@ const AuthRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <Toaster />
-    <Sonner />
-    <BrowserRouter>
-      <AuthProvider>
-        <PageLoader delay={200} minDisplayTime={600} />
-        <ActivePowerUpBar />
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
-          <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-          <Route path="/all-quests" element={<ProtectedRoute><AllQuests /></ProtectedRoute>} />
-          <Route path="/quest/:id" element={<ProtectedRoute><QuestDetail /></ProtectedRoute>} />
-          <Route path="/submit/:id" element={<ProtectedRoute><SubmitQuest /></ProtectedRoute>} />
-          <Route path="/badges" element={<ProtectedRoute><BadgeGallery /></ProtectedRoute>} />
-          <Route path="/treasure" element={<ProtectedRoute><BadgeGallery /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/profile/:userId" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
-          <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
-          <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
-          <Route path="/post/:postId" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
-          <Route path="/quest-map" element={<ProtectedRoute><QuestMapPage /></ProtectedRoute>} />
-          <Route path="/mobile-test" element={<MobileTest />} />
-          {/* Redirect old dashboard route to home */}
-          <Route path="/dashboard" element={<Navigate to="/home" replace />} />
-          <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
-  </QueryClientProvider>
-);
+// 2. REFORMAT 'App' SLIGHTLY TO CALL THE HOOK
+const App = () => {
+  // Call your tracker hook here at the root level!
+  useCJITracker();
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <AuthProvider>
+          <PageLoader delay={200} minDisplayTime={600} />
+          <ActivePowerUpBar />
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
+            <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+            <Route path="/all-quests" element={<ProtectedRoute><AllQuests /></ProtectedRoute>} />
+            <Route path="/quest/:id" element={<ProtectedRoute><QuestDetail /></ProtectedRoute>} />
+            <Route path="/submit/:id" element={<ProtectedRoute><SubmitQuest /></ProtectedRoute>} />
+            <Route path="/badges" element={<ProtectedRoute><BadgeGallery /></ProtectedRoute>} />
+            <Route path="/treasure" element={<ProtectedRoute><BadgeGallery /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/profile/:userId" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+            <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+            <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
+            <Route path="/post/:postId" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
+            <Route path="/quest-map" element={<ProtectedRoute><QuestMapPage /></ProtectedRoute>} />
+            <Route path="/mobile-test" element={<MobileTest />} />
+            {/* Redirect old dashboard route to home */}
+            <Route path="/dashboard" element={<Navigate to="/home" replace />} />
+            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
