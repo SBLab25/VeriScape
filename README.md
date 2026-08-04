@@ -393,7 +393,3 @@ npx cap open ios   # or: npx cap open android
 - GitHub: [@SBLab25](https://github.com/SBLab25)
 - Portfolio: [portfolio-sovan.netlify.app](https://portfolio-sovan.netlify.app)
 - LinkedIn: [linkedin.com/in/sovanbhakta](https://linkedin.com/in/sovanbhakta)
-
-## License
-
-No open-source license has been published for this repository yet — all rights are reserved by the author. If you'd like to use, fork, or build on this project, please reach out first.
