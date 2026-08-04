@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TopNavbar } from '@/components/navigation/TopNavbar';
 import { EnhancedQuestMap } from '@/components/quest/EnhancedQuestMap';
 import { QuestMapControls } from '@/components/quest/QuestMapControls';
 import { QuestSidebar } from '@/components/quest/QuestSidebar';
+import { RoutePanel } from '@/components/quest/RoutePanel';
 import { useQuestMap } from '@/hooks/useQuestMap';
 import { useTeamLocations } from '@/hooks/useTeamLocations';
+import { useQuestRoutes } from '@/hooks/useQuestRoutes';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { MapIcon } from '@/components/ui/map-icon';
@@ -31,6 +33,15 @@ const QuestMapPage = () => {
   } = useQuestMap();
 
   const { members: teamMembers, loading: teamLoading } = useTeamLocations();
+  const { routes: savedRoutes } = useQuestRoutes();
+  const [activeRouteQuestIds, setActiveRouteQuestIds] = useState<string[]>([]);
+
+  const mapRoutes = savedRoutes.map(r => ({
+    id: r.id,
+    name: r.name,
+    questIds: r.quest_ids,
+    color: r.color,
+  }));
 
   if (loading) {
     return (
@@ -92,6 +103,10 @@ const QuestMapPage = () => {
               onToggleCompleted={setShowCompleted}
               questCounts={questCounts}
             />
+            <RoutePanel
+              quests={quests}
+              onRouteSelect={(ids) => setActiveRouteQuestIds(ids)}
+            />
           </div>
 
           {/* Center Map */}
@@ -111,6 +126,7 @@ const QuestMapPage = () => {
                     showCompleted,
                   }}
                   teamMembers={teamMembers}
+                  routes={mapRoutes}
                 />
               </CardContent>
             </Card>

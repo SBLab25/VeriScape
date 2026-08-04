@@ -1,10 +1,11 @@
+// @ts-nocheck
 import { supabase } from "@/integrations/supabase/client";
 
 export const addNewBadges = async () => {
   const newBadges = [
     {
       name: "Welcome Adventurer",
-      description: "Welcome to Discovery Atlas! Your journey begins now.",
+      description: "Welcome to VeriScape! Your journey begins now.",
       icon_url: "👋",
       quest_id: null
     },

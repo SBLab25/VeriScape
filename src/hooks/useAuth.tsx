@@ -69,11 +69,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      // Clear user state immediately
+      // Sign out from Supabase FIRST to clear persisted session
+      await supabase.auth.signOut();
+      // Then clear local state (onAuthStateChange should also handle this)
       setUser(null);
       setSession(null);
-      // Sign out from Supabase
-      await supabase.auth.signOut();
     } catch (error) {
       console.error('Error signing out:', error);
       // Still clear local state even if API call fails

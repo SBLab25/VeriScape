@@ -464,7 +464,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onGetStarted }) => {
             >
               <DiscoveryAtlasIcon className="w-14 h-14 md:w-16 md:h-16 text-white" />
             </motion.div>
-            <span className="text-4xl md:text-6xl font-bold text-white tracking-wide">Discovery Atlas</span>
+            <span className="text-4xl md:text-6xl font-bold text-white tracking-wide">VeriScape</span>
           </motion.div>
 
           {/* Animated title */}

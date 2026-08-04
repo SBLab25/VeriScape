@@ -11,7 +11,7 @@ const testimonials = [
     name: "Sarah Chen",
     role: "Urban Explorer",
     avatar: "/api/placeholder/64/64",
-    quote: "Discovery Atlas turned my daily walks into epic adventures. I've found hidden murals and secret gardens I never knew existed in my own city!",
+    quote: "VeriScape turned my daily walks into epic adventures. I've found hidden murals and secret gardens I never knew existed in my own city!",
     rating: 5,
     badge: "🏙️ City Pioneer"
   },

@@ -17,7 +17,7 @@ export const themeOptions: ThemeOption[] = [
   {
     id: 'default',
     name: 'Discovery',
-    description: 'The classic Discovery Atlas theme',
+    description: 'The classic VeriScape theme',
     className: '',
     colors: {
       primary: 'hsl(261, 86%, 55%)',

@@ -40,7 +40,7 @@ const Auth = () => {
     } else {
       toast({
         title: "Welcome back!",
-        description: "You've successfully signed in to Discovery Atlas."
+        description: "You've successfully signed in to VeriScape."
       });
       navigate('/home');
     }
@@ -72,7 +72,7 @@ const Auth = () => {
       });
     } else {
       toast({
-        title: "Welcome to Discovery Atlas!",
+        title: "Welcome to VeriScape!",
         description: "Check your email to confirm your account."
       });
     }
@@ -151,10 +151,10 @@ const Auth = () => {
           <div className="flex items-center justify-center space-x-3 mb-6">
             <img 
               src={daLogo} 
-              alt="Discovery Atlas Logo" 
+              alt="VeriScape Logo" 
               className="h-24 w-auto object-contain"
             />
-            <span className="text-4xl font-bold text-foreground">Discovery Atlas</span>
+            <span className="text-4xl font-bold text-foreground">VeriScape</span>
           </div>
           <h1 className="text-2xl font-bold text-foreground">Welcome Explorer!</h1>
           <p className="text-muted-foreground">Begin your journey of discovery and adventure</p>
@@ -178,7 +178,7 @@ const Auth = () => {
             <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mx-auto overflow-hidden">
               <img 
                 src={daLogo} 
-                alt="Discovery Atlas" 
+                alt="VeriScape" 
                 className="w-10 h-10 object-contain"
               />
             </div>

@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Trophy, Globe, Gem, Map, Tent, Compass } from "lucide-react";
+import { MapPin, Trophy, Globe, Gem, Map, Tent, Compass, Snowflake, Link2, Users, Camera } from "lucide-react";
 import DiscoveryAtlasIcon from '@/components/ui/discovery-atlas-icon';
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 import { StreakDisplay } from "@/components/streak/StreakDisplay";
@@ -17,6 +17,10 @@ const navigationItems = [
   { title: "Crew", url: "/community", icon: Globe },
   { title: "Treasure", url: "/treasure", icon: Gem },
   { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
+  { title: "Events", url: "/seasonal-events", icon: Snowflake },
+  { title: "Chains", url: "/quest-chains", icon: Link2 },
+  
+  { title: "AR", url: "/ar-explorer", icon: Camera },
 ];
 
 export const TopNavbar = () => {
@@ -38,7 +42,7 @@ export const TopNavbar = () => {
             <div className="flex items-center gap-2">
               <DiscoveryAtlasIcon className="w-8 h-8 text-primary" />
               <span className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                Discovery Atlas
+                VeriScape
               </span>
             </div>
           </button>

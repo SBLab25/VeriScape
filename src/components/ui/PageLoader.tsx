@@ -59,10 +59,19 @@ export const PageLoader: React.FC<PageLoaderProps> = ({
       }
     }, delay + minDisplayTime);
 
+    // Safety timeout - force hide after 3 seconds max
+    const safetyTimer = setTimeout(() => {
+      if (isMounted) {
+        setIsLoading(false);
+        setShowLoader(false);
+      }
+    }, 3000);
+
     return () => {
       isMounted = false;
       clearTimeout(delayTimer);
       clearTimeout(minDisplayTimer);
+      clearTimeout(safetyTimer);
     };
   }, [location.pathname, delay, minDisplayTime, authLoading]);
 

@@ -35,3 +35,18 @@ verify_jwt = false
 
 [functions.send-notification]
 verify_jwt = true
+
+[functions.quest-master-agent]
+verify_jwt = false
+
+[functions.ai-verification-agent]
+verify_jwt = false
+
+[functions.quest-knowledge-agent]
+verify_jwt = false
+
+[functions.export-database]
+verify_jwt = false
+
+[functions.cloud-data-proxy]
+verify_jwt = false

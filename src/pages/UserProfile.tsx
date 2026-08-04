@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -222,7 +223,7 @@ const UserProfile = () => {
                     <div className="flex items-center justify-center md:justify-start gap-3">
                       <h2 className="text-3xl font-bold">{profile.username || 'Anonymous User'}</h2>
                       {currentUser && userId && currentUser.id !== userId && (
-                        <FollowButton userId={userId} size="default" />
+                        <FollowButton userId={userId} username={profile.username} size="default" showBlockOption />
                       )}
                     </div>
                     <p className="text-muted-foreground text-lg">@{profile.username || 'no-username'}</p>

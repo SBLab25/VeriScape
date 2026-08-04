@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string
+          icon_url: string | null
+          id: string
+          rarity: string
+          requirement_type: string
+          requirement_value: number
+          title: string
+          xp_reward: number
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description: string
+          icon_url?: string | null
+          id?: string
+          rarity: string
+          requirement_type: string
+          requirement_value: number
+          title: string
+          xp_reward?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string
+          icon_url?: string | null
+          id?: string
+          rarity?: string
+          requirement_type?: string
+          requirement_value?: number
+          title?: string
+          xp_reward?: number
+        }
+        Relationships: []
+      }
+      ai_agent_config: {
+        Row: {
+          config_key: string
+          config_value: Json
+          id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          config_key: string
+          config_value?: Json
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          config_key?: string
+          config_value?: Json
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       ai_generated_quests: {
         Row: {
           created_at: string
@@ -65,6 +128,243 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_logs: {
+        Row: {
+          confidence: number | null
+          confidence_score: number | null
+          created_at: string | null
+          error_message: string | null
+          execution_time_ms: number | null
+          id: string
+          input_id: string | null
+          model_used: string
+          output: Json | null
+          status: string
+          submission_id: string
+          task_type: string | null
+          user_id: string
+          verification_id: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          confidence_score?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          input_id?: string | null
+          model_used: string
+          output?: Json | null
+          status: string
+          submission_id: string
+          task_type?: string | null
+          user_id: string
+          verification_id?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          confidence_score?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          input_id?: string | null
+          model_used?: string
+          output?: Json | null
+          status?: string
+          submission_id?: string
+          task_type?: string | null
+          user_id?: string
+          verification_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_logs_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "Submissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_logs_verification_id_fkey"
+            columns: ["verification_id"]
+            isOneToOne: false
+            referencedRelation: "ai_verifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_verifications: {
+        Row: {
+          admin_override: boolean | null
+          admin_override_by: string | null
+          admin_override_reason: string | null
+          agent_explanations: Json | null
+          agent_scores: Json | null
+          analysis_report: string | null
+          analyzed_at: string | null
+          appeal_count: number | null
+          authenticity_score: number | null
+          created_at: string | null
+          cross_reference_flags: number | null
+          deepfake_confidence: number | null
+          deepfake_verdict: string | null
+          exif_latitude: number | null
+          exif_longitude: number | null
+          exif_timestamp: string | null
+          feedback_applied: boolean | null
+          final_confidence: number | null
+          geolocation_match_score: number | null
+          id: string
+          model_used: string | null
+          photo_url: string
+          quest_id: string | null
+          quest_match_score: number | null
+          reason: string
+          scene_relevance_score: number | null
+          submission_id: string
+          updated_at: string | null
+          user_id: string
+          verdict: string
+          verification_stage: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          admin_override?: boolean | null
+          admin_override_by?: string | null
+          admin_override_reason?: string | null
+          agent_explanations?: Json | null
+          agent_scores?: Json | null
+          analysis_report?: string | null
+          analyzed_at?: string | null
+          appeal_count?: number | null
+          authenticity_score?: number | null
+          created_at?: string | null
+          cross_reference_flags?: number | null
+          deepfake_confidence?: number | null
+          deepfake_verdict?: string | null
+          exif_latitude?: number | null
+          exif_longitude?: number | null
+          exif_timestamp?: string | null
+          feedback_applied?: boolean | null
+          final_confidence?: number | null
+          geolocation_match_score?: number | null
+          id?: string
+          model_used?: string | null
+          photo_url: string
+          quest_id?: string | null
+          quest_match_score?: number | null
+          reason: string
+          scene_relevance_score?: number | null
+          submission_id: string
+          updated_at?: string | null
+          user_id: string
+          verdict: string
+          verification_stage?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          admin_override?: boolean | null
+          admin_override_by?: string | null
+          admin_override_reason?: string | null
+          agent_explanations?: Json | null
+          agent_scores?: Json | null
+          analysis_report?: string | null
+          analyzed_at?: string | null
+          appeal_count?: number | null
+          authenticity_score?: number | null
+          created_at?: string | null
+          cross_reference_flags?: number | null
+          deepfake_confidence?: number | null
+          deepfake_verdict?: string | null
+          exif_latitude?: number | null
+          exif_longitude?: number | null
+          exif_timestamp?: string | null
+          feedback_applied?: boolean | null
+          final_confidence?: number | null
+          geolocation_match_score?: number | null
+          id?: string
+          model_used?: string | null
+          photo_url?: string
+          quest_id?: string | null
+          quest_match_score?: number | null
+          reason?: string
+          scene_relevance_score?: number | null
+          submission_id?: string
+          updated_at?: string | null
+          user_id?: string
+          verdict?: string
+          verification_stage?: string | null
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_verifications_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "Quests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_verifications_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "Submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ar_quest_markers: {
+        Row: {
+          ar_model_url: string | null
+          ar_overlay_emoji: string | null
+          collected_count: number
+          created_at: string
+          description: string
+          id: string
+          is_active: boolean
+          latitude: number
+          longitude: number
+          marker_type: string
+          quest_id: string | null
+          radius_meters: number
+          title: string
+          xp_reward: number
+        }
+        Insert: {
+          ar_model_url?: string | null
+          ar_overlay_emoji?: string | null
+          collected_count?: number
+          created_at?: string
+          description: string
+          id?: string
+          is_active?: boolean
+          latitude: number
+          longitude: number
+          marker_type?: string
+          quest_id?: string | null
+          radius_meters?: number
+          title: string
+          xp_reward?: number
+        }
+        Update: {
+          ar_model_url?: string | null
+          ar_overlay_emoji?: string | null
+          collected_count?: number
+          created_at?: string
+          description?: string
+          id?: string
+          is_active?: boolean
+          latitude?: number
+          longitude?: number
+          marker_type?: string
+          quest_id?: string | null
+          radius_meters?: number
+          title?: string
+          xp_reward?: number
+        }
+        Relationships: []
+      }
       Badges: {
         Row: {
           description: string | null
@@ -96,6 +396,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      blocked_users: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      challenges: {
+        Row: {
+          created_at: string | null
+          description: string
+          end_date: string
+          id: string
+          is_active: boolean | null
+          requirement_type: string
+          requirement_value: number
+          reward_points: number
+          reward_xp: number
+          start_date: string
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          end_date: string
+          id?: string
+          is_active?: boolean | null
+          requirement_type: string
+          requirement_value: number
+          reward_points?: number
+          reward_xp?: number
+          start_date: string
+          title: string
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          end_date?: string
+          id?: string
+          is_active?: boolean | null
+          requirement_type?: string
+          requirement_value?: number
+          reward_points?: number
+          reward_xp?: number
+          start_date?: string
+          title?: string
+          type?: string
+        }
+        Relationships: []
       }
       community_post_comments: {
         Row: {
@@ -184,6 +550,45 @@ export type Database = {
         }
         Relationships: []
       }
+      content_reports: {
+        Row: {
+          content_id: string
+          content_type: string
+          created_at: string
+          description: string | null
+          id: string
+          reason: string
+          reporter_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          content_id: string
+          content_type: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          reason: string
+          reporter_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          content_id?: string
+          content_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          reason?: string
+          reporter_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       crew_members: {
         Row: {
           crew_id: string
@@ -240,6 +645,305 @@ export type Database = {
           leader_id?: string | null
           max_members?: number
           name?: string
+        }
+        Relationships: []
+      }
+      daily_exercises: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          date: string
+          exercises_completed: string[] | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          date: string
+          exercises_completed?: string[] | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          date?: string
+          exercises_completed?: string[] | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      direct_messages: {
+        Row: {
+          attachments: Json | null
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          receiver_id: string
+          reply_to: string | null
+          sender_id: string
+        }
+        Insert: {
+          attachments?: Json | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          receiver_id: string
+          reply_to?: string | null
+          sender_id: string
+        }
+        Update: {
+          attachments?: Json | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          receiver_id?: string
+          reply_to?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "direct_messages_reply_to_fkey"
+            columns: ["reply_to"]
+            isOneToOne: false
+            referencedRelation: "direct_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_quests: {
+        Row: {
+          created_at: string | null
+          event_id: string
+          id: string
+          quest_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_id: string
+          id?: string
+          quest_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          quest_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_quests_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_quests_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "Quests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          banner_url: string | null
+          created_at: string | null
+          description: string
+          end_date: string
+          id: string
+          is_active: boolean | null
+          name: string
+          reward_type: string | null
+          reward_value: number | null
+          start_date: string
+          theme: string
+        }
+        Insert: {
+          banner_url?: string | null
+          created_at?: string | null
+          description: string
+          end_date: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          reward_type?: string | null
+          reward_value?: number | null
+          start_date: string
+          theme: string
+        }
+        Update: {
+          banner_url?: string | null
+          created_at?: string | null
+          description?: string
+          end_date?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          reward_type?: string | null
+          reward_value?: number | null
+          start_date?: string
+          theme?: string
+        }
+        Relationships: []
+      }
+      follow_requests: {
+        Row: {
+          created_at: string | null
+          id: string
+          requester_id: string | null
+          responded_at: string | null
+          status: string | null
+          target_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          requester_id?: string | null
+          responded_at?: string | null
+          status?: string | null
+          target_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          requester_id?: string | null
+          responded_at?: string | null
+          status?: string | null
+          target_id?: string | null
+        }
+        Relationships: []
+      }
+      follows: {
+        Row: {
+          created_at: string | null
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          follower_id?: string
+          following_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      moderation_logs: {
+        Row: {
+          categories: string[] | null
+          confidence: number | null
+          content_type: string
+          created_at: string | null
+          flagged: boolean
+          id: string
+          is_allowed: boolean
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          categories?: string[] | null
+          confidence?: number | null
+          content_type: string
+          created_at?: string | null
+          flagged: boolean
+          id?: string
+          is_allowed: boolean
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          categories?: string[] | null
+          confidence?: number | null
+          content_type?: string
+          created_at?: string | null
+          flagged?: boolean
+          id?: string
+          is_allowed?: boolean
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notification_preferences: {
+        Row: {
+          created_at: string | null
+          email_notifications: boolean | null
+          push_notifications: boolean | null
+          quest_updates: boolean | null
+          social_interactions: boolean | null
+          team_activities: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_notifications?: boolean | null
+          push_notifications?: boolean | null
+          quest_updates?: boolean | null
+          social_interactions?: boolean | null
+          team_activities?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email_notifications?: boolean | null
+          push_notifications?: boolean | null
+          quest_updates?: boolean | null
+          social_interactions?: boolean | null
+          team_activities?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          related_id: string | null
+          related_type: string | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          related_id?: string | null
+          related_type?: string | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          related_id?: string | null
+          related_type?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -312,45 +1016,344 @@ export type Database = {
         }
         Relationships: []
       }
+      powerups: {
+        Row: {
+          cost: number | null
+          created_at: string | null
+          description: string
+          duration_hours: number
+          effect_type: string
+          icon_url: string | null
+          id: string
+          multiplier: number | null
+          name: string
+          rarity: string | null
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string | null
+          description: string
+          duration_hours: number
+          effect_type: string
+          icon_url?: string | null
+          id?: string
+          multiplier?: number | null
+          name: string
+          rarity?: string | null
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string | null
+          description?: string
+          duration_hours?: number
+          effect_type?: string
+          icon_url?: string | null
+          id?: string
+          multiplier?: number | null
+          name?: string
+          rarity?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           created_at: string
+          follower_count: number | null
+          following_count: number | null
           full_name: string | null
           id: string
           interests: string[] | null
+          is_private: boolean | null
           latitude: number | null
+          level: number | null
           location: string | null
           location_last_updated: string | null
           longitude: number | null
+          shopping_points: number | null
+          total_points: number | null
           updated_at: string
           username: string | null
+          wallet_address: string | null
+          wallet_private_key_encrypted: string | null
+          xp: number | null
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          follower_count?: number | null
+          following_count?: number | null
           full_name?: string | null
           id: string
           interests?: string[] | null
+          is_private?: boolean | null
           latitude?: number | null
+          level?: number | null
           location?: string | null
           location_last_updated?: string | null
           longitude?: number | null
+          shopping_points?: number | null
+          total_points?: number | null
           updated_at?: string
           username?: string | null
+          wallet_address?: string | null
+          wallet_private_key_encrypted?: string | null
+          xp?: number | null
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
+          follower_count?: number | null
+          following_count?: number | null
           full_name?: string | null
           id?: string
           interests?: string[] | null
+          is_private?: boolean | null
           latitude?: number | null
+          level?: number | null
           location?: string | null
           location_last_updated?: string | null
           longitude?: number | null
+          shopping_points?: number | null
+          total_points?: number | null
           updated_at?: string
           username?: string | null
+          wallet_address?: string | null
+          wallet_private_key_encrypted?: string | null
+          xp?: number | null
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      quest_chain_steps: {
+        Row: {
+          chain_id: string
+          created_at: string
+          description: string
+          id: string
+          narrative: string | null
+          objectives: Json
+          step_number: number
+          title: string
+          unlock_condition: string | null
+          xp_reward: number
+        }
+        Insert: {
+          chain_id: string
+          created_at?: string
+          description: string
+          id?: string
+          narrative?: string | null
+          objectives?: Json
+          step_number: number
+          title: string
+          unlock_condition?: string | null
+          xp_reward?: number
+        }
+        Update: {
+          chain_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          narrative?: string | null
+          objectives?: Json
+          step_number?: number
+          title?: string
+          unlock_condition?: string | null
+          xp_reward?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_chain_steps_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "quest_chains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quest_chains: {
+        Row: {
+          bonus_reward_type: string | null
+          bonus_reward_value: number | null
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string
+          difficulty: string
+          id: string
+          is_active: boolean
+          storyline: string | null
+          title: string
+          total_steps: number
+          total_xp_reward: number
+          updated_at: string
+        }
+        Insert: {
+          bonus_reward_type?: string | null
+          bonus_reward_value?: number | null
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description: string
+          difficulty?: string
+          id?: string
+          is_active?: boolean
+          storyline?: string | null
+          title: string
+          total_steps?: number
+          total_xp_reward?: number
+          updated_at?: string
+        }
+        Update: {
+          bonus_reward_type?: string | null
+          bonus_reward_value?: number | null
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          difficulty?: string
+          id?: string
+          is_active?: boolean
+          storyline?: string | null
+          title?: string
+          total_steps?: number
+          total_xp_reward?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      quest_conversations: {
+        Row: {
+          context_type: string
+          created_at: string
+          id: string
+          messages: Json
+          quest_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          context_type?: string
+          created_at?: string
+          id?: string
+          messages?: Json
+          quest_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          context_type?: string
+          created_at?: string
+          id?: string
+          messages?: Json
+          quest_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      quest_learning_engagement: {
+        Row: {
+          created_at: string
+          engagement_count: number
+          fact_category: string
+          id: string
+          last_engaged_at: string
+          preferred_depth: string
+          quiz_score_avg: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          engagement_count?: number
+          fact_category: string
+          id?: string
+          last_engaged_at?: string
+          preferred_depth?: string
+          quiz_score_avg?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          engagement_count?: number
+          fact_category?: string
+          id?: string
+          last_engaged_at?: string
+          preferred_depth?: string
+          quiz_score_avg?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      quest_routes: {
+        Row: {
+          color: string
+          created_at: string
+          description: string | null
+          estimated_time_minutes: number | null
+          id: string
+          is_public: boolean
+          name: string
+          quest_ids: string[]
+          total_distance_km: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          estimated_time_minutes?: number | null
+          id?: string
+          is_public?: boolean
+          name: string
+          quest_ids?: string[]
+          total_distance_km?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          estimated_time_minutes?: number | null
+          id?: string
+          is_public?: boolean
+          name?: string
+          quest_ids?: string[]
+          total_distance_km?: number | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -360,33 +1363,45 @@ export type Database = {
           created_by: string | null
           description: string | null
           difficulty: number | null
+          difficulty_level: string | null
+          expires_at: string | null
           id: string
           is_active: boolean | null
+          is_limited_time: boolean | null
           location: string | null
           quest_type: string | null
           title: string
+          xp_reward: number | null
         }
         Insert: {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
           difficulty?: number | null
+          difficulty_level?: string | null
+          expires_at?: string | null
           id?: string
           is_active?: boolean | null
+          is_limited_time?: boolean | null
           location?: string | null
           quest_type?: string | null
           title: string
+          xp_reward?: number | null
         }
         Update: {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
           difficulty?: number | null
+          difficulty_level?: string | null
+          expires_at?: string | null
           id?: string
           is_active?: boolean | null
+          is_limited_time?: boolean | null
           location?: string | null
           quest_type?: string | null
           title?: string
+          xp_reward?: number | null
         }
         Relationships: [
           {
@@ -398,6 +1413,267 @@ export type Database = {
           },
         ]
       }
+      seasonal_event_participation: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          event_id: string
+          id: string
+          points_earned: number
+          quest_id: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          points_earned?: number
+          quest_id?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          points_earned?: number
+          quest_id?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seasonal_event_participation_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "seasonal_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seasonal_event_participation_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "seasonal_event_quests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seasonal_event_quests: {
+        Row: {
+          created_at: string
+          description: string
+          difficulty: string
+          event_id: string
+          id: string
+          objectives: Json
+          theme_tag: string | null
+          title: string
+          xp_reward: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          difficulty?: string
+          event_id: string
+          id?: string
+          objectives?: Json
+          theme_tag?: string | null
+          title: string
+          xp_reward?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          difficulty?: string
+          event_id?: string
+          id?: string
+          objectives?: Json
+          theme_tag?: string | null
+          title?: string
+          xp_reward?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seasonal_event_quests_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "seasonal_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seasonal_events: {
+        Row: {
+          banner_url: string | null
+          created_at: string
+          description: string
+          end_date: string
+          id: string
+          is_active: boolean
+          name: string
+          reward_type: string | null
+          reward_value: number | null
+          season: string
+          special_badge_id: string | null
+          start_date: string
+          theme: string
+          updated_at: string
+          xp_multiplier: number
+        }
+        Insert: {
+          banner_url?: string | null
+          created_at?: string
+          description: string
+          end_date: string
+          id?: string
+          is_active?: boolean
+          name: string
+          reward_type?: string | null
+          reward_value?: number | null
+          season?: string
+          special_badge_id?: string | null
+          start_date: string
+          theme: string
+          updated_at?: string
+          xp_multiplier?: number
+        }
+        Update: {
+          banner_url?: string | null
+          created_at?: string
+          description?: string
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          reward_type?: string | null
+          reward_value?: number | null
+          season?: string
+          special_badge_id?: string | null
+          start_date?: string
+          theme?: string
+          updated_at?: string
+          xp_multiplier?: number
+        }
+        Relationships: []
+      }
+      social_group_members: {
+        Row: {
+          group_id: string
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "social_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_group_posts: {
+        Row: {
+          content: string
+          created_at: string
+          group_id: string
+          id: string
+          image_urls: string[] | null
+          likes_count: number
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          group_id: string
+          id?: string
+          image_urls?: string[] | null
+          likes_count?: number
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          group_id?: string
+          id?: string
+          image_urls?: string[] | null
+          likes_count?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_group_posts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "social_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_groups: {
+        Row: {
+          banner_url: string | null
+          category: string
+          created_at: string
+          description: string
+          icon_emoji: string | null
+          id: string
+          is_public: boolean
+          max_members: number | null
+          member_count: number
+          name: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          banner_url?: string | null
+          category?: string
+          created_at?: string
+          description: string
+          icon_emoji?: string | null
+          id?: string
+          is_public?: boolean
+          max_members?: number | null
+          member_count?: number
+          name: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          banner_url?: string | null
+          category?: string
+          created_at?: string
+          description?: string
+          icon_emoji?: string | null
+          id?: string
+          is_public?: boolean
+          max_members?: number | null
+          member_count?: number
+          name?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       Submissions: {
         Row: {
           description: string | null
@@ -408,6 +1684,7 @@ export type Database = {
           quest_id: string | null
           status: string | null
           submitted_at: string | null
+          updated_at: string | null
           user_id: string
         }
         Insert: {
@@ -419,6 +1696,7 @@ export type Database = {
           quest_id?: string | null
           status?: string | null
           submitted_at?: string | null
+          updated_at?: string | null
           user_id?: string
         }
         Update: {
@@ -430,6 +1708,7 @@ export type Database = {
           quest_id?: string | null
           status?: string | null
           submitted_at?: string | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: [
@@ -502,6 +1781,105 @@ export type Database = {
         }
         Relationships: []
       }
+      team_challenge_progress: {
+        Row: {
+          challenge_id: string
+          completed_at: string | null
+          completions: number | null
+          id: string
+          is_completed: boolean | null
+          team_id: string
+        }
+        Insert: {
+          challenge_id: string
+          completed_at?: string | null
+          completions?: number | null
+          id?: string
+          is_completed?: boolean | null
+          team_id: string
+        }
+        Update: {
+          challenge_id?: string
+          completed_at?: string | null
+          completions?: number | null
+          id?: string
+          is_completed?: boolean | null
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_challenge_progress_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "team_challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_challenge_progress_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_challenges: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          is_active: boolean | null
+          quest_id: string | null
+          required_completions: number | null
+          reward_badge_id: string | null
+          reward_points: number | null
+          start_date: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          quest_id?: string | null
+          required_completions?: number | null
+          reward_badge_id?: string | null
+          reward_points?: number | null
+          start_date?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          quest_id?: string | null
+          required_completions?: number | null
+          reward_badge_id?: string | null
+          reward_points?: number | null
+          start_date?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_challenges_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "Quests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_challenges_reward_badge_id_fkey"
+            columns: ["reward_badge_id"]
+            isOneToOne: false
+            referencedRelation: "Badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_members: {
         Row: {
           id: string
@@ -530,6 +1908,58 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_messages: {
+        Row: {
+          attachments: Json | null
+          created_at: string | null
+          id: string
+          message: string
+          reply_to: string | null
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          attachments?: Json | null
+          created_at?: string | null
+          id?: string
+          message: string
+          reply_to?: string | null
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          attachments?: Json | null
+          created_at?: string | null
+          id?: string
+          message?: string
+          reply_to?: string | null
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_messages_reply_to_fkey"
+            columns: ["reply_to"]
+            isOneToOne: false
+            referencedRelation: "team_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_messages_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -636,6 +2066,241 @@ export type Database = {
           },
         ]
       }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          id: string
+          unlocked_at: string | null
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          id?: string
+          unlocked_at?: string | null
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          id?: string
+          unlocked_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_ar_collections: {
+        Row: {
+          collected_at: string
+          id: string
+          marker_id: string
+          photo_proof_url: string | null
+          user_id: string
+        }
+        Insert: {
+          collected_at?: string
+          id?: string
+          marker_id: string
+          photo_proof_url?: string | null
+          user_id: string
+        }
+        Update: {
+          collected_at?: string
+          id?: string
+          marker_id?: string
+          photo_proof_url?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_ar_collections_marker_id_fkey"
+            columns: ["marker_id"]
+            isOneToOne: false
+            referencedRelation: "ar_quest_markers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_challenges: {
+        Row: {
+          challenge_id: string
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          progress: number | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          progress?: number | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          progress?: number | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_challenges_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_powerups: {
+        Row: {
+          activated_at: string | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          powerup_id: string
+          user_id: string
+        }
+        Insert: {
+          activated_at?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          powerup_id: string
+          user_id: string
+        }
+        Update: {
+          activated_at?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          powerup_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_powerups_powerup_id_fkey"
+            columns: ["powerup_id"]
+            isOneToOne: false
+            referencedRelation: "powerups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_quest_chain_progress: {
+        Row: {
+          chain_id: string
+          completed_at: string | null
+          current_step: number
+          id: string
+          started_at: string
+          status: string
+          steps_completed: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chain_id: string
+          completed_at?: string | null
+          current_step?: number
+          id?: string
+          started_at?: string
+          status?: string
+          steps_completed?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chain_id?: string
+          completed_at?: string | null
+          current_step?: number
+          id?: string
+          started_at?: string
+          status?: string
+          steps_completed?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_quest_chain_progress_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "quest_chains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_quest_stats: {
+        Row: {
+          avg_completion_time_hours: number | null
+          created_at: string
+          current_level: number
+          easy_completed: number
+          hard_completed: number
+          id: string
+          last_completed_at: string | null
+          legendary_completed: number
+          medium_completed: number
+          preferred_category: string | null
+          success_rate: number
+          total_completed: number
+          total_xp: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_completion_time_hours?: number | null
+          created_at?: string
+          current_level?: number
+          easy_completed?: number
+          hard_completed?: number
+          id?: string
+          last_completed_at?: string | null
+          legendary_completed?: number
+          medium_completed?: number
+          preferred_category?: string | null
+          success_rate?: number
+          total_completed?: number
+          total_xp?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avg_completion_time_hours?: number | null
+          created_at?: string
+          current_level?: number
+          easy_completed?: number
+          hard_completed?: number
+          id?: string
+          last_completed_at?: string | null
+          legendary_completed?: number
+          medium_completed?: number
+          preferred_category?: string | null
+          success_rate?: number
+          total_completed?: number
+          total_xp?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -678,53 +2343,338 @@ export type Database = {
         }
         Relationships: []
       }
+      verification_appeals: {
+        Row: {
+          admin_decision: string | null
+          admin_id: string | null
+          admin_reason: string | null
+          ai_review_confidence: number | null
+          ai_review_reason: string | null
+          ai_review_result: Json | null
+          ai_review_verdict: string | null
+          appeal_reason: string
+          appeal_status: string
+          created_at: string
+          id: string
+          resolved_at: string | null
+          reviewed_at: string | null
+          submission_id: string
+          user_id: string
+          verification_id: string
+        }
+        Insert: {
+          admin_decision?: string | null
+          admin_id?: string | null
+          admin_reason?: string | null
+          ai_review_confidence?: number | null
+          ai_review_reason?: string | null
+          ai_review_result?: Json | null
+          ai_review_verdict?: string | null
+          appeal_reason: string
+          appeal_status?: string
+          created_at?: string
+          id?: string
+          resolved_at?: string | null
+          reviewed_at?: string | null
+          submission_id: string
+          user_id: string
+          verification_id: string
+        }
+        Update: {
+          admin_decision?: string | null
+          admin_id?: string | null
+          admin_reason?: string | null
+          ai_review_confidence?: number | null
+          ai_review_reason?: string | null
+          ai_review_result?: Json | null
+          ai_review_verdict?: string | null
+          appeal_reason?: string
+          appeal_status?: string
+          created_at?: string
+          id?: string
+          resolved_at?: string | null
+          reviewed_at?: string | null
+          submission_id?: string
+          user_id?: string
+          verification_id?: string
+        }
+        Relationships: []
+      }
+      verification_cross_references: {
+        Row: {
+          created_at: string
+          flag_reason: string | null
+          flagged: boolean | null
+          id: string
+          similarity_score: number | null
+          similarity_type: string
+          source_verification_id: string
+          target_verification_id: string
+        }
+        Insert: {
+          created_at?: string
+          flag_reason?: string | null
+          flagged?: boolean | null
+          id?: string
+          similarity_score?: number | null
+          similarity_type: string
+          source_verification_id: string
+          target_verification_id: string
+        }
+        Update: {
+          created_at?: string
+          flag_reason?: string | null
+          flagged?: boolean | null
+          id?: string
+          similarity_score?: number | null
+          similarity_type?: string
+          source_verification_id?: string
+          target_verification_id?: string
+        }
+        Relationships: []
+      }
+      verification_feedback: {
+        Row: {
+          admin_id: string
+          applied_to_thresholds: boolean | null
+          corrected_verdict: string
+          created_at: string
+          feedback_notes: string | null
+          id: string
+          original_confidence: number | null
+          original_verdict: string
+          score_adjustments: Json | null
+          verification_id: string
+        }
+        Insert: {
+          admin_id: string
+          applied_to_thresholds?: boolean | null
+          corrected_verdict: string
+          created_at?: string
+          feedback_notes?: string | null
+          id?: string
+          original_confidence?: number | null
+          original_verdict: string
+          score_adjustments?: Json | null
+          verification_id: string
+        }
+        Update: {
+          admin_id?: string
+          applied_to_thresholds?: boolean | null
+          corrected_verdict?: string
+          created_at?: string
+          feedback_notes?: string | null
+          id?: string
+          original_confidence?: number | null
+          original_verdict?: string
+          score_adjustments?: Json | null
+          verification_id?: string
+        }
+        Relationships: []
+      }
+      verification_ledger: {
+        Row: {
+          achievement_id: number | null
+          badge_id: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          status: string
+          transaction_hash: string | null
+          user_id: string
+        }
+        Insert: {
+          achievement_id?: number | null
+          badge_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          status?: string
+          transaction_hash?: string | null
+          user_id: string
+        }
+        Update: {
+          achievement_id?: number | null
+          badge_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          status?: string
+          transaction_hash?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verification_ledger_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "Badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      verification_thresholds: {
+        Row: {
+          adjustment_history: Json | null
+          created_at: string
+          id: string
+          last_adjusted_at: string | null
+          sample_count: number
+          threshold_key: string
+          threshold_value: number
+        }
+        Insert: {
+          adjustment_history?: Json | null
+          created_at?: string
+          id?: string
+          last_adjusted_at?: string | null
+          sample_count?: number
+          threshold_key: string
+          threshold_value: number
+        }
+        Update: {
+          adjustment_history?: Json | null
+          created_at?: string
+          id?: string
+          last_adjusted_at?: string | null
+          sample_count?: number
+          threshold_key?: string
+          threshold_value?: number
+        }
+        Relationships: []
+      }
+      xp_logs: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          points: number
+          source: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          points: number
+          source: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          points?: number
+          source?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      gtrgm_compress: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_decompress: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_in: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_options: {
-        Args: { "": unknown }
+      activate_powerup: {
+        Args: { p_user_powerup_id: string }
         Returns: undefined
       }
-      gtrgm_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      has_role: {
+      add_xp_to_user: {
         Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
+          p_description?: string
+          p_source: string
+          p_user_id: string
+          p_xp: number
         }
+        Returns: undefined
+      }
+      archive_expired_quests: { Args: never; Returns: undefined }
+      calculate_level: { Args: { xp: number }; Returns: number }
+      check_and_unlock_achievement: {
+        Args: { p_achievement_id: string; p_user_id: string }
         Returns: boolean
       }
-      set_limit: {
-        Args: { "": number }
-        Returns: number
+      create_notification: {
+        Args: {
+          p_message: string
+          p_related_id?: string
+          p_related_type?: string
+          p_title: string
+          p_type: Database["public"]["Enums"]["notification_type"]
+          p_user_id: string
+        }
+        Returns: string
       }
-      show_limit: {
-        Args: Record<PropertyKey, never>
-        Returns: number
+      delete_submission_admin: {
+        Args: { p_submission_id: string }
+        Returns: Json
       }
-      show_trgm: {
-        Args: { "": string }
-        Returns: string[]
+      get_followers: {
+        Args: { p_limit?: number; p_offset?: number; p_user_id: string }
+        Returns: {
+          avatar_url: string
+          followed_at: string
+          is_mutual: boolean
+          user_id: string
+          username: string
+        }[]
       }
+      get_following: {
+        Args: { p_limit?: number; p_offset?: number; p_user_id: string }
+        Returns: {
+          avatar_url: string
+          followed_at: string
+          is_mutual: boolean
+          user_id: string
+          username: string
+        }[]
+      }
+      get_recommended_difficulty: {
+        Args: { p_user_id: string }
+        Returns: string
+      }
+      get_suggested_users: {
+        Args: { p_limit?: number }
+        Returns: {
+          avatar_url: string
+          follower_count: number
+          mutual_count: number
+          user_id: string
+          username: string
+        }[]
+      }
+      has_role:
+        | {
+            Args: {
+              _role: Database["public"]["Enums"]["app_role"]
+              _user_id: string
+            }
+            Returns: boolean
+          }
+        | { Args: { role_name: string; user_id: string }; Returns: boolean }
+      is_verification_in_progress: {
+        Args: { p_badge_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      purchase_powerup: {
+        Args: { p_cost: number; p_powerup_id: string; p_user_id: string }
+        Returns: Json
+      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
+      toggle_follow: { Args: { p_target_user_id: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      notification_type:
+        | "quest_approved"
+        | "quest_rejected"
+        | "badge_earned"
+        | "comment_received"
+        | "like_received"
+        | "team_invite"
+        | "challenge_completed"
+        | "daily_challenge_reset"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -853,6 +2803,16 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      notification_type: [
+        "quest_approved",
+        "quest_rejected",
+        "badge_earned",
+        "comment_received",
+        "like_received",
+        "team_invite",
+        "challenge_completed",
+        "daily_challenge_reset",
+      ],
     },
   },
 } as const
