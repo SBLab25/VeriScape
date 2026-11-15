@@ -28,6 +28,7 @@ import SeasonalEvents from "./pages/SeasonalEvents";
 import QuestChains from "./pages/QuestChains";
 import SocialClubs from "./pages/SocialClubs";
 import ARExplorer from "./pages/ARExplorer";
+import { useCJITracker } from './hooks/useCJITracker';
 
 
 const queryClient = new QueryClient();
@@ -133,7 +134,9 @@ const GlobalErrorHandler = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-const App = () => (
+const App = () => {
+  useCJITracker();
+return(
   <ErrorBoundary>
     <GlobalErrorHandler>
       <QueryClientProvider client={queryClient}>
@@ -173,5 +176,6 @@ const App = () => (
     </GlobalErrorHandler>
   </ErrorBoundary>
 );
+};
 
 export default App;
