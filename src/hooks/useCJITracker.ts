@@ -15,6 +15,19 @@ export function useCJITracker() {
         },
       };
 
+      step_map: {
+        landing: "^/$",
+        auth: "/auth",
+        home: "/home",
+        quest_catalog: "/all-quests",
+        quest_view: "/quest/.*",
+        quest_submit: "/submit/.*",
+        badges: "/badges",
+        leaderboard: "/leaderboard",
+        community: "/community",
+        admin: "/admin",
+      }
+
       const script = document.createElement('script');
       script.src = 'https://atelier-backend-jv2m.onrender.com/tracker.js';
       script.defer = true;
